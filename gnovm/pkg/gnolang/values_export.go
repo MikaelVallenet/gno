@@ -3,7 +3,11 @@ package gnolang
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
+	"strconv"
+
+	"github.com/gnolang/gno/tm2/pkg/amino"
 )
 
 // MUST NOT modify anything inside tv.
@@ -404,7 +408,8 @@ func JSONExportTypedValues(tvs ...TypedValue) ([]byte, error) {
 	jexps := make([]*jsonExport, len(tvs))
 
 	for i, tv := range tvs {
-		jexps[i] = jsonExportTypedValue(tv, seen)
+		tv = exportValue(tv, seen)
+		jexps[i] = jsonExportedTypedValue(tv, seen)
 	}
 
 	return json.Marshal(jexps)
@@ -412,12 +417,76 @@ func JSONExportTypedValues(tvs ...TypedValue) ([]byte, error) {
 
 func JSONExportTypedValue(tv TypedValue) ([]byte, error) {
 	seen := map[Object]int{}
-	jexp := jsonExportTypedValue(tv, seen)
+	tv = exportValue(tv, seen) // first export value
+	jexp := jsonExportedTypedValue(tv, seen)
 	return json.Marshal(jexp)
 }
 
-func jsonExportTypedValue(tv TypedValue, seen map[Object]int) *jsonExport {
-	tv = exportValue(tv, seen) // first export value
+func jsonExportedTypedValue(tv TypedValue, seen map[Object]int) (exp *jsonExport) {
+	return &jsonExport{
+		Type: jsonExportedType(tv.T),
+		Value: jsonExportedValue(tv.V, seen)
+	}
+}
 
-	return &jsonExport{}
+func jsonExportedType(typ Type) []byte {
+	var ret string
+	switch ct := typ.(type) {
+	case RefType:
+		ret = ct.TypeID().String()
+	default:
+		ret = ct.String()
+	}
+
+	return []byte(ret)
+}
+
+func jsonExportedValue(tv TypedValue, seen map[Object]int) []byte {
+	bt := BaseOf(tv.T)
+	switch bt := bt.(type) {
+	case PrimitiveType:
+		var ret string
+		switch bt {
+		case UntypedBoolType, BoolType:
+			ret = strconv.FormatBool(tv.GetBool())
+		case UntypedStringType, StringType:
+			ret = strconv.Quote(tv.GetString())
+		case IntType:
+			ret = fmt.Sprintf("%d", tv.GetInt())
+		case Int8Type:
+			ret = fmt.Sprintf("%d", tv.GetInt8())
+		case Int16Type:
+			ret = fmt.Sprintf("%d", tv.GetInt16())
+		case UntypedRuneType, Int32Type:
+			ret = fmt.Sprintf("%d", tv.GetInt32())
+		case Int64Type:
+			ret = fmt.Sprintf("%d", tv.GetInt64())
+		case UintType:
+			ret = fmt.Sprintf("%d", tv.GetUint())
+		case Uint8Type:
+			ret = fmt.Sprintf("%d", tv.GetUint8())
+		case DataByteType:
+			ret = fmt.Sprintf("%d", tv.GetDataByte())
+		case Uint16Type:
+			ret = fmt.Sprintf("%d", tv.GetUint16())
+		case Uint32Type:
+			ret = fmt.Sprintf("%d", tv.GetUint32())
+		case Uint64Type:
+			ret = fmt.Sprintf("%d", tv.GetUint64())
+		case Float32Type:
+			ret = fmt.Sprintf("%v", math.Float32frombits(tv.GetFloat32()))
+		case Float64Type:
+			ret = fmt.Sprintf("%v", math.Float64frombits(tv.GetFloat64()))
+		case UntypedBigintType:
+			ret = tv.V.(BigintValue).V.String()
+		case UntypedBigdecType:
+			ret = tv.V.(BigdecValue).V.String()
+		default:
+			panic("invalid primitive type - should not happen")
+		}
+
+		return []byte(ret)
+	default:
+		return amino.MustMarshalJSONAny(tv)
+	}
 }
