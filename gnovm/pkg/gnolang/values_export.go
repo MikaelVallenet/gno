@@ -228,7 +228,7 @@ func exportToRefValue(val Value, m map[Object]int) RefValue {
 		// Create a local reference to Object for export
 		n, ok := m[oo]
 		if !ok {
-			n = len(m)
+			n = len(m) + 1 // Avoid 0 value
 			m[oo] = n
 		}
 

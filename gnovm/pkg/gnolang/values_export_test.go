@@ -182,11 +182,13 @@ func init() {
 	require.Len(t, tps, 1)
 	tv := tps[0]
 
-	ret := amino.MustMarshalJSONAny(tv.V)
+	val := ExportValue(tv)
+	ret := amino.MustMarshalJSONAny(val)
 	fmt.Printf("rec: %s\n", string(ret))
 
-	ref, ok := tv.V.(*RefValue)
-	require.True(t, ok, "should be a ref value")
+	fmt.Printf("VAL %#v\n", val)
+	ref := val.V.(PointerValue).Base.(RefValue)
+	require.False(t, ref.ObjectID.IsZero())
 
 	data, err := JSONExportTypedValue(tv)
 	require.NoError(t, err)
