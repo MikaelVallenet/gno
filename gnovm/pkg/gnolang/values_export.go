@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/gnolang/gno/tm2/pkg/amino"
 )
@@ -106,13 +107,13 @@ func exportCopyValueWithRefs(val Value, m map[Object]int) Value {
 		}
 	case *FuncValue:
 		source := toRefNode(cv.Source)
-		var parent Value
-		if cv.Parent != nil {
-			parent = exportToRefValue(cv.Parent, m)
+		if strings.HasSuffix(source.Location.File, "_test.gno") {
+			// Ignore _test files
+			return nil
 		}
-		captures := make([]TypedValue, len(cv.Captures))
-		for i, ctv := range cv.Captures {
-			captures[i] = exportValue(ctv, m)
+		var closure Value
+		if cv.Closure != nil {
+			closure = exportToRefValue(cv.Closure, m)
 		}
 		// nativeBody funcs which don't come from NativeResolver (and thus don't
 		// have NativePkg/Name) can't be persisted, and should not be able
@@ -120,21 +121,20 @@ func exportCopyValueWithRefs(val Value, m map[Object]int) Value {
 		if cv.nativeBody != nil && cv.NativePkg == "" {
 			panic("cannot copy function value with native body when there is no native package")
 		}
-		ft := exportCopyTypeWithRefs(cv.Type)
+		ft := exportCopyTypeWithRefs(cv.Type, m)
 		return &FuncValue{
-			ObjectInfo: cv.ObjectInfo.Copy(),
 			Type:       ft,
 			IsMethod:   cv.IsMethod,
 			Source:     source,
 			Name:       cv.Name,
-			Parent:     parent,
-			Captures:   captures,
+			Closure:    closure,
+			Captures:   cv.Captures,
 			FileName:   cv.FileName,
 			PkgPath:    cv.PkgPath,
 			NativePkg:  cv.NativePkg,
 			NativeName: cv.NativeName,
-			Crossing:   cv.Crossing,
 		}
+
 	case *BoundMethodValue:
 		fnc := exportCopyValueWithRefs(cv.Func, m).(*FuncValue)
 		rtv := exportValue(cv.Receiver, m)
@@ -211,7 +211,7 @@ func exportToRefValue(val Value, m map[Object]int) RefValue {
 	}
 
 	oo, ok := val.(Object)
-	if ok {
+	if !ok {
 		panic("unexpected error converting to ref value")
 	}
 
@@ -398,14 +398,14 @@ func exportCopyMethods(methods []TypedValue, m map[Object]int) []TypedValue {
 	return res
 }
 
-type jsonExport struct {
+type JSONTypedValue struct {
 	Type  json.RawMessage `json:"T"`
 	Value json.RawMessage `json:"V"`
 }
 
 func JSONExportTypedValues(tvs ...TypedValue) ([]byte, error) {
 	seen := map[Object]int{}
-	jexps := make([]*jsonExport, len(tvs))
+	jexps := make([]*JSONTypedValue, len(tvs))
 
 	for i, tv := range tvs {
 		tv = exportValue(tv, seen)
@@ -419,13 +419,14 @@ func JSONExportTypedValue(tv TypedValue) ([]byte, error) {
 	seen := map[Object]int{}
 	tv = exportValue(tv, seen) // first export value
 	jexp := jsonExportedTypedValue(tv, seen)
+	fmt.Printf("after T: (%s) - V: (%s)\n", string(jexp.Type), string(jexp.Value))
 	return json.Marshal(jexp)
 }
 
-func jsonExportedTypedValue(tv TypedValue, seen map[Object]int) (exp *jsonExport) {
-	return &jsonExport{
-		Type: jsonExportedType(tv.T),
-		Value: jsonExportedValue(tv.V, seen)
+func jsonExportedTypedValue(tv TypedValue, seen map[Object]int) (exp *JSONTypedValue) {
+	return &JSONTypedValue{
+		Type:  jsonExportedType(tv.T),
+		Value: jsonExportedValue(tv, seen),
 	}
 }
 
@@ -435,7 +436,7 @@ func jsonExportedType(typ Type) []byte {
 	case RefType:
 		ret = ct.TypeID().String()
 	default:
-		ret = ct.String()
+		ret = strconv.Quote(ct.String())
 	}
 
 	return []byte(ret)
@@ -487,6 +488,10 @@ func jsonExportedValue(tv TypedValue, seen map[Object]int) []byte {
 
 		return []byte(ret)
 	default:
-		return amino.MustMarshalJSONAny(tv)
+		if tv.V == nil {
+			return []byte("null")
+		}
+
+		return amino.MustMarshalJSONAny(tv.V)
 	}
 }
