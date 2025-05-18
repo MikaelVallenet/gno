@@ -917,7 +917,7 @@ func stringifyResultValues(m *gno.Machine, format QueryFormat, values []gno.Type
 		panic(fmt.Errorf("expected 1 `string` or `Stringer` result, got %v", tv.T.Kind()))
 
 	case QueryFormatJSON:
-		return stringifyJSONPrimitiveValues(m, values)
+		return stringifyJSONResults(m, values)
 	case QueryFormatDefault, "":
 		var res strings.Builder
 

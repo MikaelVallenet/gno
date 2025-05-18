@@ -184,10 +184,9 @@ func init() {
 
 	val := ExportValue(tv)
 	ret := amino.MustMarshalJSONAny(val)
-	fmt.Printf("rec: %s\n", string(ret))
-
-	fmt.Printf("VAL %#v\n", val)
+	fmt.Println(string(ret))
 	ref := val.V.(PointerValue).Base.(RefValue)
+	fmt.Println(ref.ObjectID.String())
 	require.False(t, ref.ObjectID.IsZero())
 
 	data, err := JSONExportTypedValue(tv)

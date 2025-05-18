@@ -2,12 +2,14 @@ package vm
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/cockroachdb/apd/v3"
+	"github.com/gnolang/gno/gnovm/pkg/gnolang"
 	gno "github.com/gnolang/gno/gnovm/pkg/gnolang"
 )
 
@@ -208,136 +210,178 @@ func convertStringToFloat(value string, precision int) float64 {
 	return f64
 }
 
-func stringifyJSONPrimitiveValues(m *gno.Machine, tvs []gno.TypedValue) string {
-	var str strings.Builder
-
-	str.WriteRune('[')
-	for i, tv := range tvs {
-		if i > 0 {
-			str.WriteRune(',')
-		}
-		str.WriteString(stringifyJSONPrimitiveValue(m, tv, i == len(tvs)-1))
-	}
-	str.WriteRune(']')
-
-	return str.String()
+type jsonResults struct {
+	Results json.RawMessage `json:"results"`
+	Error   *string         `json:"@error,omitempty"`
 }
 
-func stringifyJSONPrimitiveValue(m *gno.Machine, tv gno.TypedValue, isLast bool) string {
-	if tv.T == nil {
-		return `{"T":null,"V":null}`
-	}
-
-	bt := gno.BaseOf(tv.T)
-	switch bt := bt.(type) {
-	case gno.PrimitiveType:
-		if bt == gno.UntypedStringType || bt == gno.StringType {
-			// Special case for string, as we want it under "V" and quoted.
-			return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), tv.GetString())
+func stringifyJSONResults(m *gno.Machine, tvs []gno.TypedValue) string {
+	jres := jsonResults{Results: []byte("[]")}
+	if len(tvs) > 0 {
+		var err error
+		if jres.Results, err = gnolang.JSONExportTypedValues(tvs); err != nil {
+			panic("unable to marshal results")
 		}
 
-		v := getPrimitiveValue(bt, tv)
-		return fmt.Sprintf(`{"T":%q,"N":%s}`, tv.T.String(), v)
-	case *gno.ArrayType:
-		if bt.Elt == gno.Uint8Type {
-			arr := tv.V.(*gno.ArrayValue)
-			if data := arr.Data; data != nil {
-				i := arr.GetLength()
-				v := base64.StdEncoding.EncodeToString(data[:i])
-				return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), v)
-			}
-		}
-	case *gno.SliceType:
-		if bt.Elt == gno.Uint8Type {
-			slice := tv.V.(*gno.SliceValue)
-			if data := slice.GetBase(nil).Data; data != nil {
-				i := slice.GetLength()
-				v := base64.StdEncoding.EncodeToString(data[:i])
-				return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), v)
-			}
+		last := tvs[len(tvs)-1]
+		if err, ok := tryGetError(m, last); ok {
+			jres.Error = &err
 		}
 	}
 
-	if tv.V == nil {
-		return fmt.Sprintf(`{"T":%q,"V":null}`, tv.T.String())
+	s, err := json.Marshal(jres)
+	if err != nil {
+		panic("unable to marshal result")
 	}
 
-	if isLast {
-		// Only last element error can be unwrapped
-		if err, ok := tryGetError(m, tv); ok {
-			return fmt.Sprintf(`{"@error":%q}`, err)
-		}
-	}
-
-	var oid gno.ObjectID
-	switch v := tv.V.(type) {
-	case gno.PointerValue:
-		oid = v.GetBase(m.Store).GetObjectID()
-	case gno.Object:
-		oid = v.GetObjectID()
-	}
-
-	return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), oid.String())
+	return string(s)
 }
 
-func getPrimitiveValue(bt gno.PrimitiveType, tv gno.TypedValue) string {
-	switch bt {
-	case gno.UntypedBoolType, gno.BoolType:
-		return fmt.Sprintf("%t", tv.GetBool())
-	case gno.UntypedStringType, gno.StringType:
-		return strconv.Quote(tv.GetString())
-	case gno.Float32Type:
-		f32 := math.Float32frombits(tv.GetFloat32())
-		return fmt.Sprintf("%f", f32)
-	case gno.Float64Type:
-		f64 := math.Float64frombits(tv.GetFloat64())
-		return fmt.Sprintf("%f", f64)
-	case gno.UntypedBigintType:
-		return tv.V.(gno.BigintValue).V.String()
-	case gno.UntypedBigdecType:
-		return tv.V.(gno.BigdecValue).V.String()
-	case gno.IntType, gno.Int8Type, gno.Int16Type, gno.Int32Type, gno.UntypedRuneType, gno.Int64Type:
-		return fmt.Sprintf("%d", getSignedIntValue(bt, tv))
-	case gno.UintType, gno.Uint8Type, gno.Uint16Type, gno.Uint32Type, gno.Uint64Type, gno.DataByteType:
-		return fmt.Sprintf("%d", getUnsignedIntValue(bt, tv))
-	default:
-		panic("invalid primitive type - should not happen")
-	}
-}
+// func stringifyJSONPrimitiveValues(m *gno.Machine, tvs []gno.TypedValue) string {
+// 	var str strings.Builder
 
-func getSignedIntValue(bt gno.PrimitiveType, tv gno.TypedValue) int64 {
-	switch bt {
-	case gno.IntType:
-		return tv.GetInt()
-	case gno.Int8Type:
-		return int64(tv.GetInt8())
-	case gno.Int16Type:
-		return int64(tv.GetInt16())
-	case gno.Int32Type, gno.UntypedRuneType:
-		return int64(tv.GetInt32())
-	case gno.Int64Type:
-		return tv.GetInt64()
-	default:
-		panic("unexpected signed integer type")
-	}
-}
+// 	str.WriteRune('[')
+// 	for i, tv := range tvs {
+// 		if i > 0 {
+// 			str.WriteRune(',')
+// 		}
+// 		str.WriteString(stringifyJSONPrimitiveValue(m, tv, i == len(tvs)-1))
+// 	}
+// 	str.WriteRune(']')
 
-func getUnsignedIntValue(bt gno.PrimitiveType, tv gno.TypedValue) uint64 {
-	switch bt {
-	case gno.UintType:
-		return tv.GetUint()
-	case gno.Uint8Type, gno.DataByteType:
-		return uint64(tv.GetUint8())
-	case gno.Uint16Type:
-		return uint64(tv.GetUint16())
-	case gno.Uint32Type:
-		return uint64(tv.GetUint32())
-	case gno.Uint64Type:
-		return tv.GetUint64()
-	default:
-		panic("unexpected unsigned integer type")
-	}
-}
+// 	return str.String()
+// }
+
+// func stringifyJSONPrimitiveValues(m *gno.Machine, tvs []gno.TypedValue) string {
+// 	var str strings.Builder
+
+// 	str.WriteRune('[')
+// 	for i, tv := range tvs {
+// 		if i > 0 {
+// 			str.WriteRune(',')
+// 		}
+// 		str.WriteString(stringifyJSONPrimitiveValue(m, tv, i == len(tvs)-1))
+// 	}
+// 	str.WriteRune(']')
+
+// 	return str.String()
+// }
+
+// func stringifyJSONPrimitiveValue(m *gno.Machine, tv gno.TypedValue, isLast bool) string {
+// 	if tv.T == nil {
+// 		return `{"T":null,"V":null}`
+// 	}
+
+// 	bt := gno.BaseOf(tv.T)
+// 	switch bt := bt.(type) {
+// 	case gno.PrimitiveType:
+// 		if bt == gno.UntypedStringType || bt == gno.StringType {
+// 			// Special case for string, as we want it under "V" and quoted.
+// 			return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), tv.GetString())
+// 		}
+
+// 		v := getPrimitiveValue(bt, tv)
+// 		return fmt.Sprintf(`{"T":%q,"N":%s}`, tv.T.String(), v)
+// 	case *gno.ArrayType:
+// 		if bt.Elt == gno.Uint8Type {
+// 			arr := tv.V.(*gno.ArrayValue)
+// 			if data := arr.Data; data != nil {
+// 				i := arr.GetLength()
+// 				v := base64.StdEncoding.EncodeToString(data[:i])
+// 				return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), v)
+// 			}
+// 		}
+// 	case *gno.SliceType:
+// 		if bt.Elt == gno.Uint8Type {
+// 			slice := tv.V.(*gno.SliceValue)
+// 			if data := slice.GetBase(nil).Data; data != nil {
+// 				i := slice.GetLength()
+// 				v := base64.StdEncoding.EncodeToString(data[:i])
+// 				return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), v)
+// 			}
+// 		}
+// 	}
+
+// 	if tv.V == nil {
+// 		return fmt.Sprintf(`{"T":%q,"V":null}`, tv.T.String())
+// 	}
+
+// 	if isLast {
+// 		// Only last element error can be unwrapped
+// 		if err, ok := tryGetError(m, tv); ok {
+// 			return fmt.Sprintf(`{"@error":%q}`, err)
+// 		}
+// 	}
+
+// 	var oid gno.ObjectID
+// 	switch v := tv.V.(type) {
+// 	case gno.PointerValue:
+// 		oid = v.GetBase(m.Store).GetObjectID()
+// 	case gno.Object:
+// 		oid = v.GetObjectID()
+// 	}
+
+// 	return fmt.Sprintf(`{"T":%q,"V":%q}`, tv.T.String(), oid.String())
+// }
+
+// func getPrimitiveValue(bt gno.PrimitiveType, tv gno.TypedValue) string {
+// 	switch bt {
+// 	case gno.UntypedBoolType, gno.BoolType:
+// 		return fmt.Sprintf("%t", tv.GetBool())
+// 	case gno.UntypedStringType, gno.StringType:
+// 		return strconv.Quote(tv.GetString())
+// 	case gno.Float32Type:
+// 		f32 := math.Float32frombits(tv.GetFloat32())
+// 		return fmt.Sprintf("%f", f32)
+// 	case gno.Float64Type:
+// 		f64 := math.Float64frombits(tv.GetFloat64())
+// 		return fmt.Sprintf("%f", f64)
+// 	case gno.UntypedBigintType:
+// 		return tv.V.(gno.BigintValue).V.String()
+// 	case gno.UntypedBigdecType:
+// 		return tv.V.(gno.BigdecValue).V.String()
+// 	case gno.IntType, gno.Int8Type, gno.Int16Type, gno.Int32Type, gno.UntypedRuneType, gno.Int64Type:
+// 		return fmt.Sprintf("%d", getSignedIntValue(bt, tv))
+// 	case gno.UintType, gno.Uint8Type, gno.Uint16Type, gno.Uint32Type, gno.Uint64Type, gno.DataByteType:
+// 		return fmt.Sprintf("%d", getUnsignedIntValue(bt, tv))
+// 	default:
+// 		panic("invalid primitive type - should not happen")
+// 	}
+// }
+
+// func getSignedIntValue(bt gno.PrimitiveType, tv gno.TypedValue) int64 {
+// 	switch bt {
+// 	case gno.IntType:
+// 		return tv.GetInt()
+// 	case gno.Int8Type:
+// 		return int64(tv.GetInt8())
+// 	case gno.Int16Type:
+// 		return int64(tv.GetInt16())
+// 	case gno.Int32Type, gno.UntypedRuneType:
+// 		return int64(tv.GetInt32())
+// 	case gno.Int64Type:
+// 		return tv.GetInt64()
+// 	default:
+// 		panic("unexpected signed integer type")
+// 	}
+// }
+
+// func getUnsignedIntValue(bt gno.PrimitiveType, tv gno.TypedValue) uint64 {
+// 	switch bt {
+// 	case gno.UintType:
+// 		return tv.GetUint()
+// 	case gno.Uint8Type, gno.DataByteType:
+// 		return uint64(tv.GetUint8())
+// 	case gno.Uint16Type:
+// 		return uint64(tv.GetUint16())
+// 	case gno.Uint32Type:
+// 		return uint64(tv.GetUint32())
+// 	case gno.Uint64Type:
+// 		return tv.GetUint64()
+// 	default:
+// 		panic("unexpected unsigned integer type")
+// 	}
+// }
 
 func tryGetError(m *gno.Machine, tv gno.TypedValue) (string, bool) {
 	bt := gno.BaseOf(tv.T)
@@ -345,7 +389,7 @@ func tryGetError(m *gno.Machine, tv gno.TypedValue) (string, bool) {
 	// Check if type implement Error
 	ptv := tv
 	if _, ok := bt.(*gno.PointerType); !ok {
-		// Try wrapping the valye
+		// Try wrapping the value
 		ptv = gno.TypedValue{
 			T: &gno.PointerType{Elt: tv.T},
 			V: gno.PointerValue{TV: &tv, Base: tv.V},

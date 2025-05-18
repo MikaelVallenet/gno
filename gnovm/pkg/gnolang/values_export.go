@@ -13,10 +13,10 @@ import (
 
 // MUST NOT modify anything inside tv.
 func ExportValues(tvs []TypedValue) []TypedValue {
-	m := map[Object]int{}
+	seens := map[Object]int{}
 	ntvs := make([]TypedValue, len(tvs))
 	for i, tv := range tvs {
-		ntvs[i] = exportValue(tv, m)
+		ntvs[i] = exportValue(tv, seens)
 	}
 
 	return ntvs
@@ -403,13 +403,12 @@ type JSONTypedValue struct {
 	Value json.RawMessage `json:"V"`
 }
 
-func JSONExportTypedValues(tvs ...TypedValue) ([]byte, error) {
+func JSONExportTypedValues(tvs []TypedValue) ([]byte, error) {
 	seen := map[Object]int{}
 	jexps := make([]*JSONTypedValue, len(tvs))
 
 	for i, tv := range tvs {
-		tv = exportValue(tv, seen)
-		jexps[i] = jsonExportedTypedValue(tv, seen)
+		jexps[i] = jsonExportedTypedValue(exportValue(tv, seen))
 	}
 
 	return json.Marshal(jexps)
@@ -418,19 +417,21 @@ func JSONExportTypedValues(tvs ...TypedValue) ([]byte, error) {
 func JSONExportTypedValue(tv TypedValue) ([]byte, error) {
 	seen := map[Object]int{}
 	tv = exportValue(tv, seen) // first export value
-	jexp := jsonExportedTypedValue(tv, seen)
-	fmt.Printf("after T: (%s) - V: (%s)\n", string(jexp.Type), string(jexp.Value))
-	return json.Marshal(jexp)
+	return json.Marshal(jsonExportedTypedValue(tv))
 }
 
-func jsonExportedTypedValue(tv TypedValue, seen map[Object]int) (exp *JSONTypedValue) {
+func jsonExportedTypedValue(tv TypedValue) (exp *JSONTypedValue) {
 	return &JSONTypedValue{
 		Type:  jsonExportedType(tv.T),
-		Value: jsonExportedValue(tv, seen),
+		Value: jsonExportedValue(tv),
 	}
 }
 
 func jsonExportedType(typ Type) []byte {
+	if typ == nil {
+		return nil
+	}
+
 	var ret string
 	switch ct := typ.(type) {
 	case RefType:
@@ -442,7 +443,7 @@ func jsonExportedType(typ Type) []byte {
 	return []byte(ret)
 }
 
-func jsonExportedValue(tv TypedValue, seen map[Object]int) []byte {
+func jsonExportedValue(tv TypedValue) []byte {
 	bt := BaseOf(tv.T)
 	switch bt := bt.(type) {
 	case PrimitiveType:
