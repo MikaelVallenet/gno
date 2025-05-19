@@ -237,6 +237,27 @@ func stringifyJSONResults(m *gno.Machine, tvs []gno.TypedValue) string {
 	return string(s)
 }
 
+func tryGetError(m *gno.Machine, tv gno.TypedValue) (string, bool) {
+	bt := gno.BaseOf(tv.T)
+
+	// Check if type implement Error
+	if _, ok := bt.(*gno.PointerType); !ok {
+		// Try wrapping the value
+		tv = gno.TypedValue{
+			T: &gno.PointerType{Elt: tv.T},
+			V: gno.PointerValue{TV: &tv, Base: tv.V},
+		}
+	}
+
+	// If implements .Error(), return this
+	if tv.ImplError() {
+		res := m.Eval(gno.Call(gno.Sel(&gno.ConstExpr{TypedValue: tv}, "Error")))
+		return res[0].GetString(), true
+	}
+
+	return "", false
+}
+
 // func stringifyJSONPrimitiveValues(m *gno.Machine, tvs []gno.TypedValue) string {
 // 	var str strings.Builder
 
@@ -382,25 +403,3 @@ func stringifyJSONResults(m *gno.Machine, tvs []gno.TypedValue) string {
 // 		panic("unexpected unsigned integer type")
 // 	}
 // }
-
-func tryGetError(m *gno.Machine, tv gno.TypedValue) (string, bool) {
-	bt := gno.BaseOf(tv.T)
-
-	// Check if type implement Error
-	ptv := tv
-	if _, ok := bt.(*gno.PointerType); !ok {
-		// Try wrapping the value
-		ptv = gno.TypedValue{
-			T: &gno.PointerType{Elt: tv.T},
-			V: gno.PointerValue{TV: &tv, Base: tv.V},
-		}
-	}
-
-	// If implements .Error(), return this
-	if ptv.ImplError() {
-		res := m.Eval(gno.Call(gno.Sel(&gno.ConstExpr{TypedValue: ptv}, "Error")))
-		return res[0].GetString(), true
-	}
-
-	return "", false
-}
