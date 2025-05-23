@@ -2,7 +2,7 @@
 
 A **Decentralized Autonomous Organization (DAO)** is a self-governing entity that operates through smart contracts, enabling transparent decision-making without centralized control.
 
-Daokit is a gnolang package for creating complex DAO models. It introduces a new framework based conditions. BaseDAO is an extension of DAOkit that handles the members & roles.
+Daokit is a gnolang package for creating complex DAO models. It introduces a new framework based on conditions. BaseDAO is an extension of DAOkit that handles the members & roles.
 
 # 2. Why daokit ?
 
