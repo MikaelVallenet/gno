@@ -2,49 +2,49 @@
 
 A **Decentralized Autonomous Organization (DAO)** is a self-governing entity that operates through smart contracts, enabling transparent decision-making without centralized control.
 
-Daokit is a gnolang package for creating complex DAO models. It introduces a new framework based on conditions. BaseDAO is an extension of DAOkit that handles the members & roles.
+`daokit` is a gnolang package for creating complex DAO models. It introduces a new framework based on conditions, composed of :
+- `daokit` : Core package for building DAOs, proposals, and actions
+- `basedao` : Extension with membership and role management
+- `daocond`: Stateless condition engine for evaluating proposals
 
-# 2. Why daokit ?
+# 2. What is DAOkit ?
 
-The advantages:
-- Condition system to create complex proposals combining roles, counting, percentages, logical operations, etc.
-- Role system to represent the organization & responsabilities of the members
+DAOkit provides a powerful condition and role-based system to build flexible and programmable DAOs.
+
+## Key Features:
+- Create proposals that include complex execution logic
+- Attach rules (conditions) to each resource
+- Assign roles to users to structure permissions and governance
 
 ## 2.1 Key Concepts
 
-To understand how it works, here are three fundamental concepts:
+- **Proposal**: A request to execute a **resource**. Proposals are voted on and executed only if predefined **conditions** are met.
+- **Resource**: An executable action within the DAO. Each resource is governed by a **condition**.
+- **Condition**: A set of rules that determine whether a proposal can be executed.
+- **Role**: Labels that assign governance power or permissions to DAO members.
 
-- **Proposal:** A proposal is a request to execute a resource (an action) as the organization itself. A proposal is created by a member and other members can vote on it. A proposal use the condition attached the resource to evaluate if the proposal can be executed. A proposal can have different states like: open, executed, closed.
-- **Resource:** An executable action within the DAO, triggered through the **proposal system**. A resource also contains a condition that must be met before the proposal can be executed.
-- **Condition:** A set of **rules attached to a resource**, which must be met before the corresponding proposal can be executed.
+**Example Use Case**: A DAO wants to create a proposal to spend money from its treasury.
+**Rules**:
+- `SpendMoney` is a resource with a condition requiring:
+	- 50% approval from the administration board
+	- Approval from the CFO
 
-A central concept but not fundamental is the **Role**. A role is a label assigned to a user (or entity) that grants specific **permissions and governance power** based on the organization’s structure. you can create organization without roles, but using it in combination with daocond will allow you to create more complex proposals.
-
-To give an example of how this key concepts interacts, let's consider a DAO that wants to create a proposal to **spend money** from the DAO's treasury.
-
-The DAO's constitution may include the following rules:
-
-- SpendMoney is a resource that allows to spend money from the DAO's treasury.
-- To execute a resource a proposal must be created
-- A condition is attached to the SpendMoney resource, let's say for the condition to be met the proposal must be supported by 50% of the administration board, and by the Chief Financial Officer (CFO)
-
-In this case:
-- Any user can create a proposal to spend money
-- Only the votes of the administration board & the CFO will matters
-- The proposal will only be executed if it gets the majority of the votes of the administration board & the CFO
+**Outcome**:
+- Any user can propose to spend money
+- Only board and CFO votes are considered
+- The proposal executes only if the condition is satisfied
 
 # 3. Architecture
 
-the daokit framework is based on the following packages:
+DAOkit framework is composed of three packages:
 
 ## 3.1 daocond
 
-``daocond`` is a package that allows to create conditions (treshold, count, etc) can be combined with roles but is package agnostic and takes function as parameter.
+`daocond` provides a stateless condition engine used to evaluate if a proposal should be executed.
 
-Here is the ``Condition`` interface:
-
+### Interface
+// TODO add documentation for interface
 ```go
-
 type Condition interface {
 	Eval(votes map[string]Vote) bool
 	Signal(votes map[string]Vote) float64
@@ -54,33 +54,28 @@ type Condition interface {
 }
 ```
 
-A condition does not handle the voting process & storage, it only evaluate if the condition is met based on the votes.
-
-We have conditions for members treshold, roles treshold, roles count ...etc
-
+### Available Conditions
+// TODO add documentation for conditions
 ```go
 func MembersThreshold(threshold float64, isMemberFn func(memberId string) bool, membersCountFn func() uint64) Condition
 func RoleThreshold(threshold float64, role string, hasRoleFn func(memberId string, role string) bool, usersRoleCountFn func(role string) uint32) Condition
 func RoleCount(count uint64, role string, hasRoleFn func(memberId string, role string) bool) Condition
 ```
 
-We also have conditions that can be used to build more complex conditions using logical operators like AND & OR.
-
+### Logical Composition
+// TODO add example of composition
 ```go
 func And(conditions ...Condition) Condition
 func Or(conditions ...Condition) Condition
 ```
 
-But feel free to create your own conditions based on your own needs & external resources.
-
-We decided to make our conditions stateless first because adding state add some drawbacks depending on the structure (size, and kind of proposals) of the DAO.
+Conditions are stateless for flexibility and scalability.
 
 ## 3.2 daokit
 
-``daokit`` is a package that creates the core of the DAO (resources, proposals). It imports ``daocond`` to attach it to the resource structure.
+`daokit` provides the core mechanics:
 
-Here is the ``Core`` structure:
-
+### Core Structure:
 ```go
 type Core struct {
 	Resources *ResourcesStore
@@ -88,8 +83,7 @@ type Core struct {
 }
 ```
 
-``daokit`` package also provide an interface for the public usage of the DAO:
-
+### DAO Interface:
 ```go
 type DAO interface {
 	Propose(req ProposalRequest) uint64
@@ -98,24 +92,30 @@ type DAO interface {
 }
 ```
 
-``daokit`` also provide an ``Action`` and ``ActionHandler`` interface used to create new resources and handlers for DAOs, discover more in the [5. Create Custom Resources](#5-create-custom-resources) section.
+``daokit`` also provide an ``Action`` and ``ActionHandler`` interface used to create new resources and handlers for DAOs, discover more in the [Create Custom Resources](#5-create-custom-resources) section.
+// TODO give example
+// TODO have different states like: open, executed, closed.
 
 ## 3.3 basedao
 
-``basedao`` is a wrapper around daokit that handles the memberstore. The memberstore is a structure that includes few methods to handle the members and the roles. It also provider the rendering and create some basic resources like add/remove member, add/remove role, etc.
+`basedao` wraps `daokit` to handle members and roles.
 
-``basedao`` split the DAO in two structures, the ``DAOPrivate`` and the ``daoPublic``.
-The difference is that the ``DAOPrivate`` is meant to be used internally by the DAO and not exposed to the outside. By accessing the ``DAOPrivate`` you could modify the DAO core, the memberstore or everything in the DAO. The ``daoPublic`` is the public part of the DAO, it's the part that will be exposed to the outside.
-It's an implementation of [``DAO`` interface](#32-daokit) from ``daokit`` package.
+// TODO show example of memberstore 
+// ``basedao`` is a wrapper around daokit that handles the memberstore. The memberstore is a structure that includes few methods to handle the members and the roles. It also provider the rendering and create some basic resources like add/remove member, add/remove role, etc.
 
-To create a new DAO the endpoint is the following:
+# Key Structures:
+- `daoPrivate`: Full access to internal DAO state
+- `daoPublic`: External interface for DAO interaction
 
+// TODO what is this 
+// It's an implementation of [``DAO`` interface](#32-daokit) from ``daokit`` package.
+
+### Creating a DAO:
 ```go
 func New(conf *Config) (daokit.DAO, *DAOPrivate)
 ```
 
-The ``Config`` structure is the following:
-
+### Config Structure:
 ```go
 type Config struct {
 	Name              string
@@ -130,14 +130,16 @@ type Config struct {
 }
 ```
 
+// TODO make this much simpler
 - The ``MembersStore`` can be created with ``basedao.NewMembersStore(...)``
 - The ``ProfileStringSetter`` and ``ProfileStringGetter`` are just here to set and get the profile of the DAO. could be the functions from the ``/r/demo/profile`` package for example.
 - The ``InitialCondition`` is meant to be attached to the default resources of the DAO.
 - The ``NoDefaultHandlers`` is just here to enable/disable the default handlers of the DAO.
 - ``NoCreationEvent`` will disable the event emitted when the DAO is created.
 
-# 4. Code example of a basic DAO
+# 4. Code Example of a Basic DAO
 
+// TODO add more comment
 ```go
 package daokit_demo
 
@@ -202,21 +204,17 @@ func Render(path string) string {
 
 # 5. Create Custom Resources
 
-There is a good chance that you will need to create custom resources for your DAO to met your need. You could also want to create custom resources for your package without being yourself a daokit consumer but to give people the ability to use your package in their DAOs.
-
-To do so, you will need to implement the ``Action`` and ``ActionHandler`` interface.
-
-Here is the interfaces:
+To add new behavior to your DAO — or to enable others to integrate your package into their own DAOs — define custom resources by implementing:
 
 ```go
 type Action interface {
-	String() string // return a string representation of the action
-	Type() string // return the type of the action (like a slug)
+	String() string // Return human-readable description of the action
+	Type() string // TODO Type of the action (like a slug) // human readable ?
 }
 
 type ActionHandler interface {
-	Execute(action Action) // execute the action
-	Type() string // return the type of the action (like a slug)
+	Execute(action Action) // Executes logic associated with the action
+	Type() string // TODO // return the type of the action (like a slug)
 }
 ```
 
