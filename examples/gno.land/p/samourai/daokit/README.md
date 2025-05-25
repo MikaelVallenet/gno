@@ -62,7 +62,6 @@ type Condition interface {
 
 ### Built-in Conditions
 
-// TODO check this functions
 ```go
 // Requires a fraction of DAO members to approve
 func MembersThreshold(threshold float64, isMemberFn func(memberId string) bool, membersCountFn func() uint64) Condition
@@ -110,9 +109,8 @@ type DAO interface {
 }
 ```
 
-// TODO [Create Custom Resources](#5-create-custom-resources) section.
-// TODO give example
-> Example: See [Code Example of a Basic DAO](#4-code-example-of-a-basic-dao)
+> [Create Custom Resources](#5-create-custom-resources).
+> [Code Example of a Basic DAO](#4-code-example-of-a-basic-dao)
 
 ### Proposal Lifecycle
 
@@ -134,24 +132,62 @@ Each proposal goes through the following states:
 
 ## 3.3 [basedao](../basedao/README.md)
 
-`basedao` wraps `daokit` to handle members and roles.
+`basedao` extends `daokit` to handle members and roles management.
+It handles who can participate in a DAO and what permissions they have.
 
-// TODO show example of memberstore 
-// ``basedao`` is a wrapper around daokit that handles the memberstore. The memberstore is a structure that includes few methods to handle the members and the roles. It also provider the rendering and create some basic resources like add/remove member, add/remove role, etc.
+### Core Types
+```go
+type MembersStore struct {
+	Roles   *avl.Tree 
+	Members *avl.Tree 
+}
+```
 
-# Key Structures:
+### Initialize the DAO
+Create a `MembersStore` structure to initialize the DAO with predefined roles and members.
+
+```go
+roles := []basedao.RoleInfo{
+	{Name: "admin", Description: "Administrators"},
+	{Name: "finance", Description: "Handles treasury"},
+}
+
+members := []basedao.Member{
+	{Address: "g1abc...", Roles: []string{"admin"}},
+	{Address: "g1xyz...", Roles: []string{"finance"}},
+}
+
+store := basedao.NewMembersStore(roles, members)
+```
+
+### Example Usage
+```go
+store := basedao.NewMembersStore(nil, nil)
+
+// Add a role and assign it
+store.AddRole(basedao.RoleInfo{Name: "moderator", Description: "Can moderate posts"})
+store.AddMember("g1alice...", []string{"moderator"})
+
+// Update role assignment
+store.AddRoleToMember("g1alice...", "editor")
+store.RemoveRoleFromMember("g1alice...", "moderator")
+
+// Inspect the state
+fmt.Println("Is Alice a member?", store.IsMember("g1alice..."))
+fmt.Println("Is Alice an editor?", store.HasRole("g1alice...", "editor"))
+fmt.Println("All Members (JSON):", store.GetMembersJSON())
+```
+
+### Creating a DAO:
+#### Key Structures:
 - `daoPrivate`: Full access to internal DAO state
 - `daoPublic`: External interface for DAO interaction
 
-// TODO what is this 
-// It's an implementation of [``DAO`` interface](#32-daokit) from ``daokit`` package.
-
-### Creating a DAO:
 ```go
 func New(conf *Config) (daokit.DAO, *DAOPrivate)
 ```
 
-### Config Structure:
+### Configuration:
 ```go
 type Config struct {
 	Name              string
@@ -166,16 +202,14 @@ type Config struct {
 }
 ```
 
-// TODO make this much simpler
-- The ``MembersStore`` can be created with ``basedao.NewMembersStore(...)``
-- The ``ProfileStringSetter`` and ``ProfileStringGetter`` are just here to set and get the profile of the DAO. could be the functions from the ``/r/demo/profile`` package for example.
-- The ``InitialCondition`` is meant to be attached to the default resources of the DAO.
-- The ``NoDefaultHandlers`` is just here to enable/disable the default handlers of the DAO.
-- ``NoCreationEvent`` will disable the event emitted when the DAO is created.
+- `MembersStore`: Use `basedao.NewMembersStore(...)` to create members and roles.
+- `ProfileStringSetter` / `Getter`: Optional helpers to store profile data (e.g., from `/r/demo/profile`).
+- `InitialCondition`: Default rule applied to all built-in DAO actions.
+- `NoDefaultHandlers`: Set to `true` to disable built-in actions like add/remove member.
+- `NoCreationEvent`: Set to `true` if you don’t want a "DAO Created" event to be emitted.
 
 # 4. Code Example of a Basic DAO
 
-// TODO add more comment
 ```go
 package daokit_demo
 
@@ -187,8 +221,8 @@ import (
 )
 
 var (
-	DAO        daokit.DAO // exposed to the outside
-	daoPrivate *basedao.DAOPrivate // internal use
+	DAO        daokit.DAO // External interface for DAO interaction
+	daoPrivate *basedao.DAOPrivate // Full access to internal DAO state
 )
 
 func init() {
@@ -205,14 +239,13 @@ func init() {
 		{Address: "g16jv...6e0r", Roles: []string{}},
 	}
 
-	// create the member store now to be able to use it in the condition
 	memberStore := basedao.NewMembersStore(initialRoles, initialMembers)
 
 	membersMajority := daocond.MembersThreshold(0.6, memberStore.IsMember, memberStore.MembersCount)
 	publicRelationships := daocond.RoleCount(1, "public-relationships", memberStore.HasRole)
 	financeOfficer := daocond.RoleCount(1, "finance-officer", memberStore.HasRole)
 
-	// and & or use va_args so you can pass as many conditions as you want
+	// `and` and `or` use va_args so you can pass as many conditions as needed
 	adminCond := daocond.And(membersMajority, publicRelationships, financeOfficer)
 
 	DAO, daoPrivate = basedao.New(&basedao.Config{
@@ -305,3 +338,17 @@ resource := daokit.Resource{
 daoPrivate.Core.Resources.Set(&resource)
 ```
 
+## 6. Testing & Debugging
+
+You can inspect proposals and conditions using the `Render()` method:
+
+```go
+fmt.Println(daoPrivate.Render("proposals/1"))
+```
+
+This prints the status, required conditions, and votes.
+Use Signal() from the condition to visualize progress:
+
+```go
+progress := condition.Signal(currentVotes)
+```
