@@ -1,3 +1,5 @@
+# daokit
+
 # 1. Introduction
 
 A **Decentralized Autonomous Organization (DAO)** is a self-governing entity that operates through smart contracts, enabling transparent decision-making without centralized control.
@@ -208,37 +210,46 @@ To add new behavior to your DAO — or to enable others to integrate your packag
 
 ```go
 type Action interface {
-	String() string // Return human-readable description of the action
 	Type() string // TODO Type of the action (like a slug) // human readable ?
+	String() string // return human-readable content of the action // TODO explain the payload to string
 }
 
 type ActionHandler interface {
-	Execute(action Action) // Executes logic associated with the action
 	Type() string // TODO // return the type of the action (like a slug)
+	Execute(action Action) // Executes logic associated with the action
 }
 ```
+This allows DAOs to execute arbitrary logic or interact with Gno packages through governance-approved decisions.
 
-The ``daokit`` package provide a generic implementation of the ``Action`` and ``ActionHandler`` interface to allows users to create in a simple way their own resources. You can take a look at the [``./actions.gno``](./actions.gno) file to see how the generic implementation works.
+``daokit`` provide a generic implementation of ``Action`` and ``ActionHandler``, available at the [``./actions.gno``](./actions.gno) file.
 
+// TODO add example of their use
 
-So to create your own resource follow these steps:
-
+## Steps to Add a Custom Resource:
+- 1. Define the path of the action, it should be unique 
 ```go
-//XXX: pkg /p/samourai/blog (this package does not exist, it's just an example)
-// Think about crossing if you write the actions within realm and not package
-
-
-// 1. Define the kind (slug) of the action, it should be unique 
+// XXX: pkg "/p/samourai/blog" - does not exist, it's just an example
 const ActionNewPostKind = "gno.land/p/samourai/blog.NewPost"
+```
 
-// 2. Define the action structure (the payload of the action)
-// It should contain the data needed to execute the action
+- 2. Create the structure type of the payload
+```go
 type ActionNewPost struct {
 	Title string
 	Content string
 }
+```
 
-// 3. Use the generic action handler to create the factory of handlers & actions
+- 3. Implement the action and handler
+```go
+func NewPostAction(title, content string) daokit.Action {
+	// def: daoKit.NewAction(type: String, String)
+	return daokit.NewAction(ActionNewPostKind, &ActionNewPost{
+		Title:   title,
+		Content: content,
+	})
+}
+
 func NewPostHandler(blog *Blog) daokit.ActionHandler {
 	return daokit.NewActionHandler(ActionNewPostKind, func(payload interface{}) {
 		action, ok := payload.(*ActionNewPost)
@@ -248,38 +259,14 @@ func NewPostHandler(blog *Blog) daokit.ActionHandler {
 		blog.NewPost(action.Title, action.Content)
 	})
 }
-
-func NewPostAction(title, content string) daokit.Action {
-	return daokit.NewAction(ActionNewPostKind, &ActionNewPost{
-		Title:   title,
-		Content: content,
-	})
-}
-
----
-
-// 4. Register the handler to the DAO
-// XXX: /r/samourai/samdao
-
-// 4.1 Import the package
-import (
-    "gno.land/p/samorai/blog"
-    "gno.land/p/samourai/daokit"
-)
-
-var blog *blog.Blog
-// 4.2 Register your resources
-func init() {
-    ...
-    blog = blog.NewBlog()
-
-    resource := daokit.Resource{
-        Condition: daocond.NewRoleCount(1, "CEO", daoPrivate.Members.HasRole),
-        Handler: blog.NewPostHandler(blog),
-    }
-    daoPrivate.Core.Resources.Set(&resource)
-}
-
 ```
 
-Now as the author of the package blog, my users can easily use the blog package within their DAO without having to implement the ``Action`` and ``ActionHandler`` interface.
+- 4. Register the resource
+```go
+resource := daokit.Resource{
+    Condition: daocond.NewRoleCount(1, "CEO", daoPrivate.Members.HasRole),
+    Handler: blog.NewPostHandler(blog),
+}
+daoPrivate.Core.Resources.Set(&resource)
+```
+
