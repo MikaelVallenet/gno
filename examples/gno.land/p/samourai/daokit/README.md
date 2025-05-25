@@ -26,6 +26,7 @@ A **Decentralized Autonomous Organization (DAO)** is a self-governing entity tha
 - **Role**: Labels that assign governance power or permissions to DAO members.
 
 **Example Use Case**: A DAO wants to create a proposal to spend money from its treasury.
+
 **Rules**:
 - `SpendMoney` is a resource with a condition requiring:
 	- 50% approval from the administration board
