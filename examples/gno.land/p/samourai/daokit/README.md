@@ -9,9 +9,9 @@ A **Decentralized Autonomous Organization (DAO)** is a self-governing entity tha
 - `basedao` : Extension with membership and role management
 - `daocond`: Stateless condition engine for evaluating proposals
 
-# 2. What is DAOkit ?
+# 2. What is `daokit` ?
 
-DAOkit provides a powerful condition and role-based system to build flexible and programmable DAOs.
+`daokit` provides a powerful condition and role-based system to build flexible and programmable DAOs.
 
 ## Key Features:
 - Create proposals that include complex execution logic
