@@ -243,7 +243,7 @@ type ActionNewPost struct {
 - 3. Implement the action and handler
 ```go
 func NewPostAction(title, content string) daokit.Action {
-	// def: daoKit.NewAction(type: String, String)
+	// def: daoKit.NewAction(kind: String, payload: interface{})
 	return daokit.NewAction(ActionNewPostKind, &ActionNewPost{
 		Title:   title,
 		Content: content,
@@ -251,6 +251,7 @@ func NewPostAction(title, content string) daokit.Action {
 }
 
 func NewPostHandler(blog *Blog) daokit.ActionHandler {
+	// def: daoKit.NewActionHandler(kind: String, payload: func(interface{}))
 	return daokit.NewActionHandler(ActionNewPostKind, func(payload interface{}) {
 		action, ok := payload.(*ActionNewPost)
 		if !ok {
