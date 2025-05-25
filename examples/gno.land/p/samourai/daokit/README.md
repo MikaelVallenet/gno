@@ -53,7 +53,7 @@ type Condition interface {
 	// Signal returns a value from 0.0 to 1.0 to indicate how close the condition is to being met.
 	Signal(votes map[string]Vote) float64
 
-    // return a static human-readable representation of the condition.
+	// return a static human-readable representation of the condition.
 	Render() string
 	// return a dynamic representation with vote context included.
 	RenderWithVotes(votes map[string]Vote) string
@@ -61,19 +61,36 @@ type Condition interface {
 ```
 
 ### Built-in Conditions
+`daocond` provides several built-in conditions to cover common governance scenarios.
 
 ```go
-// Requires a fraction of DAO members to approve
+// MembersThreshold requires that a specified fraction of all DAO members approve the proposal.
+// - threshold: A value between 0.0 and 1.0 representing the minimum approval percentage required.
+// - isMemberFn: A function to verify if an ID corresponds to a DAO member.
+// - membersCountFn: A function returning the total number of members in the DAO.
 func MembersThreshold(threshold float64, isMemberFn func(memberId string) bool, membersCountFn func() uint64) Condition
-// Requires a percentage of a role to approve 
+
+// RoleThreshold requires that a certain percentage of members holding a specific role approve.
+// - threshold: Minimum fraction (0.0 to 1.0) of role members needed to approve.
+// - role: The name of the role (e.g., "admin") to check votes against.
+// - hasRoleFn: Function to check if a member has the specified role.
+// - usersRoleCountFn: Function returning the total number of users with the role.
 func RoleThreshold(threshold float64, role string, hasRoleFn func(memberId string, role string) bool, usersRoleCountFn func(role string) uint32) Condition
-// Requires a fixed number of users with a role 
+
+// RoleCount requires a fixed minimum number of members holding a specific role to approve.
+// - count: The minimum number of approving votes from members with the role.
+// - role: The role name to consider (e.g., "finance-officer").
+// - hasRoleFn: Function to check if a member has the role.
 func RoleCount(count uint64, role string, hasRoleFn func(memberId string, role string) bool) Condition
 ```
 
 ### Logical Composition
+You can combine multiple conditions to create complex governance rules using logical operators:
+
 ```go
+// And returns a condition that is satisfied only if *all* provided conditions are met.
 func And(conditions ...Condition) Condition
+// Or returns a condition that is satisfied if *any* one of the provided conditions is met.
 func Or(conditions ...Condition) Condition
 ```
 
@@ -108,8 +125,6 @@ type DAO interface {
 	Vote(id uint64, vote daocond.Vote)
 }
 ```
-
-> [Create Custom Resources](#5-create-custom-resources).
 > [Code Example of a Basic DAO](#4-code-example-of-a-basic-dao)
 
 ### Proposal Lifecycle
@@ -179,13 +194,15 @@ fmt.Println("All Members (JSON):", store.GetMembersJSON())
 ```
 
 ### Creating a DAO:
-#### Key Structures:
-- `daoPrivate`: Full access to internal DAO state
-- `daoPublic`: External interface for DAO interaction
 
 ```go
 func New(conf *Config) (daokit.DAO, *DAOPrivate)
 ```
+
+#### Key Structures:
+- `DAOPrivate`: Full access to internal DAO state
+- `daokit.DAO`: External interface for DAO interaction
+
 
 ### Configuration:
 ```go
@@ -290,7 +307,7 @@ This allows DAOs to execute arbitrary logic or interact with Gno packages throug
 
 ``daokit`` provide a generic implementation of ``Action`` and ``ActionHandler``, available at the [``./actions.gno``](./actions.gno) file.
 
-// TODO add example of their use
+// TODO Add an example of implementation
 
 ## Steps to Add a Custom Resource:
 - 1. Define the path of the action, it should be unique 
@@ -347,6 +364,7 @@ fmt.Println(daoPrivate.Render("proposals/1"))
 ```
 
 This prints the status, required conditions, and votes.
+
 Use Signal() from the condition to visualize progress:
 
 ```go
