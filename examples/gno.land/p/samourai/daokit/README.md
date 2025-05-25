@@ -354,19 +354,3 @@ resource := daokit.Resource{
 }
 daoPrivate.Core.Resources.Set(&resource)
 ```
-
-## 6. Testing & Debugging
-
-You can inspect proposals and conditions using the `Render()` method:
-
-```go
-fmt.Println(daoPrivate.Render("proposals/1"))
-```
-
-This prints the status, required conditions, and votes.
-
-Use Signal() from the condition to visualize progress:
-
-```go
-progress := condition.Signal(currentVotes)
-```
