@@ -101,7 +101,7 @@ Conditions are stateless for flexibility and scalability.
 `daokit` provides the core mechanics:
 
 ### Core Structure:
-// TODO add more informations
+// TODO add more explanation
 ```go
 type Core struct {
 	Resources *ResourcesStore
