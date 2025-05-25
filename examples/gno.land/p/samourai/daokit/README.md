@@ -40,35 +40,51 @@ A **Decentralized Autonomous Organization (DAO)** is a self-governing entity tha
 
 DAOkit framework is composed of three packages:
 
-## 3.1 daocond
+## 3.1 [daocond](../daocond/README.md)
 
 `daocond` provides a stateless condition engine used to evaluate if a proposal should be executed.
 
 ### Interface
-// TODO add documentation for interface
 ```go
 type Condition interface {
+	// checks if the condition is satisfied based on current votes.
 	Eval(votes map[string]Vote) bool
+	// TODO Check what is this 
+	// Signal returns a value from 0.0 to 1.0 to indicate how close the condition is to being met.
 	Signal(votes map[string]Vote) float64
 
+    // return a static human-readable representation of the condition.
 	Render() string
+	// return a dynamic representation with vote context included.
 	RenderWithVotes(votes map[string]Vote) string
 }
 ```
 
-### Available Conditions
-// TODO add documentation for conditions
+### Built-in Conditions
+
+// TODO check this functions
 ```go
+// Requires a fraction of DAO members to approve
 func MembersThreshold(threshold float64, isMemberFn func(memberId string) bool, membersCountFn func() uint64) Condition
+// Requires a percentage of a role to approve 
 func RoleThreshold(threshold float64, role string, hasRoleFn func(memberId string, role string) bool, usersRoleCountFn func(role string) uint32) Condition
+// Requires a fixed number of users with a role 
 func RoleCount(count uint64, role string, hasRoleFn func(memberId string, role string) bool) Condition
 ```
 
 ### Logical Composition
-// TODO add example of composition
 ```go
 func And(conditions ...Condition) Condition
 func Or(conditions ...Condition) Condition
+```
+
+**Example**:
+```go
+// Require both admin approval and at least one CFO
+cond := daocond.And(
+    daocond.RoleThreshold(0.5, "admin", hasRole, roleCount),
+    daocond.RoleCount(1, "CFO", hasRole),
+)
 ```
 
 Conditions are stateless for flexibility and scalability.
@@ -94,11 +110,29 @@ type DAO interface {
 }
 ```
 
-``daokit`` also provide an ``Action`` and ``ActionHandler`` interface used to create new resources and handlers for DAOs, discover more in the [Create Custom Resources](#5-create-custom-resources) section.
+// TODO [Create Custom Resources](#5-create-custom-resources) section.
 // TODO give example
-// TODO have different states like: open, executed, closed.
+> Example: See [Code Example of a Basic DAO](#4-code-example-of-a-basic-dao)
 
-## 3.3 basedao
+### Proposal Lifecycle
+
+Each proposal goes through the following states:
+
+1. **Open**: 
+- Initial state after proposal creation.
+- Accepts votes from eligible participants.
+
+2. **Passed**
+- Proposal has gathered enough valid votes to meet the condition.
+- Voting is **closed** and cannot be modified.
+- The proposal is now eligible for **execution**.
+
+3. **Executed**
+- Proposal action has been successfully carried out.
+- Final state — proposal can no longer be voted on or modified.
+
+
+## 3.3 [basedao](../basedao/README.md)
 
 `basedao` wraps `daokit` to handle members and roles.
 
