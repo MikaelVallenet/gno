@@ -311,13 +311,13 @@ This allows DAOs to execute arbitrary logic or interact with Gno packages throug
 // TODO Add an example of implementation
 
 ## Steps to Add a Custom Resource:
-- 1. Define the path of the action, it should be unique 
+1. Define the path of the action, it should be unique 
 ```go
 // XXX: pkg "/p/samourai/blog" - does not exist, it's just an example
 const ActionNewPostKind = "gno.land/p/samourai/blog.NewPost"
 ```
 
-- 2. Create the structure type of the payload
+2. Create the structure type of the payload
 ```go
 type ActionNewPost struct {
 	Title string
@@ -325,7 +325,7 @@ type ActionNewPost struct {
 }
 ```
 
-- 3. Implement the action and handler
+3. Implement the action and handler
 ```go
 func NewPostAction(title, content string) daokit.Action {
 	// def: daoKit.NewAction(kind: String, payload: interface{})
@@ -347,7 +347,7 @@ func NewPostHandler(blog *Blog) daokit.ActionHandler {
 }
 ```
 
-- 4. Register the resource
+4. Register the resource
 ```go
 resource := daokit.Resource{
     Condition: daocond.NewRoleCount(1, "CEO", daoPrivate.Members.HasRole),
