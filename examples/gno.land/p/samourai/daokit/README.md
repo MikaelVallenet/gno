@@ -66,22 +66,12 @@ type Condition interface {
 
 ```go
 // MembersThreshold requires that a specified fraction of all DAO members approve the proposal.
-// - threshold: A value between 0.0 and 1.0 representing the minimum approval percentage required.
-// - isMemberFn: A function to verify if an ID corresponds to a DAO member.
-// - membersCountFn: A function returning the total number of members in the DAO.
 func MembersThreshold(threshold float64, isMemberFn func(memberId string) bool, membersCountFn func() uint64) Condition
 
 // RoleThreshold requires that a certain percentage of members holding a specific role approve.
-// - threshold: Minimum fraction (0.0 to 1.0) of role members needed to approve.
-// - role: The name of the role (e.g., "admin") to check votes against.
-// - hasRoleFn: Function to check if a member has the specified role.
-// - usersRoleCountFn: Function returning the total number of users with the role.
 func RoleThreshold(threshold float64, role string, hasRoleFn func(memberId string, role string) bool, usersRoleCountFn func(role string) uint32) Condition
 
 // RoleCount requires a fixed minimum number of members holding a specific role to approve.
-// - count: The minimum number of approving votes from members with the role.
-// - role: The role name to consider (e.g., "finance-officer").
-// - hasRoleFn: Function to check if a member has the role.
 func RoleCount(count uint64, role string, hasRoleFn func(memberId string, role string) bool) Condition
 ```
 
@@ -111,6 +101,7 @@ Conditions are stateless for flexibility and scalability.
 `daokit` provides the core mechanics:
 
 ### Core Structure:
+// TODO add more informations
 ```go
 type Core struct {
 	Resources *ResourcesStore
