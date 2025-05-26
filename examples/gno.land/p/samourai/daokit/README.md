@@ -48,14 +48,14 @@ DAOkit framework is composed of three packages:
 ### Interface
 ```go
 type Condition interface {
-	// checks if the condition is satisfied based on current votes.
+	// Eval checks if the condition is satisfied based on current votes.
 	Eval(votes map[string]Vote) bool
 	// Signal returns a value from 0.0 to 1.0 to indicate how close the condition is to being met.
 	Signal(votes map[string]Vote) float64
 
-	// return a static human-readable representation of the condition.
+	// Render returns a static human-readable representation of the condition.
 	Render() string
-	// return a dynamic representation with vote context included.
+	// RenderWithVotes returns a dynamic representation with vote context included.
 	RenderWithVotes(votes map[string]Vote) string
 }
 ```
@@ -180,9 +180,9 @@ store.AddRoleToMember("g1alice...", "editor")
 store.RemoveRoleFromMember("g1alice...", "moderator")
 
 // Inspect the state
-fmt.Println("Is Alice a member?", store.IsMember("g1alice..."))
-fmt.Println("Is Alice an editor?", store.HasRole("g1alice...", "editor"))
-fmt.Println("All Members (JSON):", store.GetMembersJSON())
+isMember := store.IsMember("g1alice...") // "Is Alice a member?"
+hasRole := store.HasRole("g1alice...", "editor") // "Is Alice an editor?"
+members := store.GetMembersJSON() // "All Members (JSON):"
 ```
 
 ### Creating a DAO:
