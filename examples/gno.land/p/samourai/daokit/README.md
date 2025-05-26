@@ -50,7 +50,6 @@ DAOkit framework is composed of three packages:
 type Condition interface {
 	// checks if the condition is satisfied based on current votes.
 	Eval(votes map[string]Vote) bool
-	// TODO Check what is this 
 	// Signal returns a value from 0.0 to 1.0 to indicate how close the condition is to being met.
 	Signal(votes map[string]Vote) float64
 
@@ -101,7 +100,7 @@ Conditions are stateless for flexibility and scalability.
 `daokit` provides the core mechanics:
 
 ### Core Structure:
-// TODO add more explanation
+It's the central component of a DAO, responsible for managing both available resources that can be executed and the proposals.
 ```go
 type Core struct {
 	Resources *ResourcesStore
@@ -110,11 +109,12 @@ type Core struct {
 ```
 
 ### DAO Interface:
+The interface defines the external functions that users or other modules interact with. It abstracts the core governance flow: proposing, voting, and executing.
 ```go
 type DAO interface {
 	Propose(req ProposalRequest) uint64
-	Execute(id uint64)
 	Vote(id uint64, vote daocond.Vote)
+	Execute(id uint64)
 }
 ```
 > [Code Example of a Basic DAO](#4-code-example-of-a-basic-dao)
@@ -202,20 +202,19 @@ type Config struct {
 	Name              string
 	Description       string
 	ImageURI          string
+	// Use `basedao.NewMembersStore(...)` to create members and roles.
 	Members           *MembersStore
+	// Set to `true` to disable built-in actions like add/remove member.
 	NoDefaultHandlers bool
+	// Default rule applied to all built-in DAO actions.
 	InitialCondition  daocond.Condition
+	// Optional helpers to store profile data (e.g., from `/r/demo/profile`).
 	SetProfileString  ProfileStringSetter
 	GetProfileString  ProfileStringGetter
+	// Set to `true` if you don’t want a "DAO Created" event to be emitted.
 	NoCreationEvent   bool
 }
 ```
-
-- `MembersStore`: Use `basedao.NewMembersStore(...)` to create members and roles.
-- `ProfileStringSetter` / `Getter`: Optional helpers to store profile data (e.g., from `/r/demo/profile`).
-- `InitialCondition`: Default rule applied to all built-in DAO actions.
-- `NoDefaultHandlers`: Set to `true` to disable built-in actions like add/remove member.
-- `NoCreationEvent`: Set to `true` if you don’t want a "DAO Created" event to be emitted.
 
 # 4. Code Example of a Basic DAO
 
@@ -286,13 +285,13 @@ To add new behavior to your DAO — or to enable others to integrate your packag
 
 ```go
 type Action interface {
-	Type() string // TODO Type of the action (like a slug) // human readable ?
-	String() string // return human-readable content of the action // TODO explain the payload to string
+	Type() string // return the type of the action. e.g.: "gno.land/p/samourai/blog"
+	String() string // return stringify content of the action. e.g. for a payload: > {title: "Title", content: "Content"}
 }
 
 type ActionHandler interface {
-	Type() string // TODO // return the type of the action (like a slug)
-	Execute(action Action) // Executes logic associated with the action
+	Type() string // return the type of the action. e.g.: "gno.land/p/samourai/blog"
+	Execute(action Action) // executes logic associated with the action
 }
 ```
 This allows DAOs to execute arbitrary logic or interact with Gno packages through governance-approved decisions.
