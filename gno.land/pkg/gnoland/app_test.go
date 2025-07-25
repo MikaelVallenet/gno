@@ -526,7 +526,7 @@ func TestEndBlocker(t *testing.T) {
 			mockEventSwitch = newCommonEvSwitch()
 
 			mockVMKeeper = &mockVMKeeper{
-				queryFn: func(_ sdk.Context, cfg vm.EvalCfg) (string, error) {
+				queryFn: func(_ sdk.Context, cfg vm.QueryMsgEval) (string, error) {
 					vmCalled = true
 
 					require.Equal(t, valRealm, cfg.PkgPath)
@@ -569,7 +569,7 @@ func TestEndBlocker(t *testing.T) {
 			mockEventSwitch = newCommonEvSwitch()
 
 			mockVMKeeper = &mockVMKeeper{
-				queryFn: func(_ sdk.Context, cfg vm.EvalCfg) (string, error) {
+				queryFn: func(_ sdk.Context, cfg vm.QueryMsgEval) (string, error) {
 					vmCalled = true
 
 					require.Equal(t, valRealm, cfg.PkgPath)
@@ -608,7 +608,7 @@ func TestEndBlocker(t *testing.T) {
 			mockEventSwitch = newCommonEvSwitch()
 
 			mockVMKeeper = &mockVMKeeper{
-				queryFn: func(_ sdk.Context, cfg vm.EvalCfg) (string, error) {
+				queryFn: func(_ sdk.Context, cfg vm.QueryMsgEval) (string, error) {
 					require.Equal(t, valRealm, cfg.PkgPath)
 					require.NotEmpty(t, cfg.Expr)
 
