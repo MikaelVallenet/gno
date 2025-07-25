@@ -101,7 +101,7 @@ func TestConvertJSONValuePrimtive(t *testing.T) {
 
 			tv := tps[0]
 
-			rep := stringifyJSONPrimitiveValue(m, tv)
+			rep := stringifyJSONPrimitiveValue(m, tv, false)
 			require.Equal(t, tc.Expected, rep)
 		})
 	}
@@ -133,7 +133,7 @@ func (e *E) Error() string { return e.S }
 		require.Len(t, tps, 1)
 
 		tv := tps[0]
-		rep := stringifyJSONPrimitiveValue(m, tv)
+		rep := stringifyJSONPrimitiveValue(m, tv, false)
 		require.Equal(t, expected, rep)
 	})
 
@@ -155,7 +155,7 @@ func (e *E) Error() string { return e.S }
 		require.Len(t, tps, 1)
 
 		tv := tps[0]
-		rep := stringifyJSONPrimitiveValue(m, tv)
+		rep := stringifyJSONPrimitiveValue(m, tv, false)
 		require.Equal(t, expected, rep)
 	})
 
@@ -177,7 +177,7 @@ func (e *E) Error() string { return e.S }
 		require.Len(t, tps, 1)
 
 		tv := tps[0]
-		rep := stringifyJSONPrimitiveValue(m, tv)
+		rep := stringifyJSONPrimitiveValue(m, tv, false)
 		require.Equal(t, expected, rep)
 	})
 }
@@ -263,7 +263,7 @@ var Value error = &myError{}
 			require.Len(t, tps, 1)
 
 			tv := tps[0]
-			rep := stringifyJSONPrimitiveValue(m, tv)
+			rep := stringifyJSONPrimitiveValue(m, tv, false)
 			require.Equal(t, tc.Expected, rep)
 		})
 	}
