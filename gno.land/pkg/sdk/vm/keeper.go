@@ -650,7 +650,7 @@ func (vm *VMKeeper) Call(ctx sdk.Context, msg MsgCall) (res string, err error) {
 	defer doRecover(m, &err)
 
 	rtvs := m.Eval(xn)
-	res = stringifyResultValues(m, QueryFormatMachine, rtvs)
+	res = stringifyResultValues(m, QueryFormatJSON, rtvs)
 
 	// Use `\n\n` as separator to separate results for single tx with multi msgs
 	res += "\n\n"

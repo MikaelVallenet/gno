@@ -4,7 +4,7 @@ import "strconv"
 
 var counter int
 
-func Increment() int {
+func Increment(cur realm) int {
 	counter++
 	return counter
 }

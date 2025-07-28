@@ -215,7 +215,7 @@ func ExecSignAndBroadcast(
 
 	bres, err := SignAndBroadcastHandler(cfg, nameOrBech32, tx, pass)
 	if err != nil {
-		return errors.Wrap(err, "broadcast tx")
+		return errors.Wrap(err, "broadcast tx lol")
 	}
 
 	if cfg.RootCfg.Json {
