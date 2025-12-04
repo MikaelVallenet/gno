@@ -5,11 +5,17 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
 	goio "io"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/gnolang/gno/gnovm/cmd/gno/internal/cmdutil"
+	"github.com/gnolang/gno/gnovm/cmd/gno/lintrules"
 	"github.com/gnolang/gno/gnovm/pkg/gnoenv"
 	gno "github.com/gnolang/gno/gnovm/pkg/gnolang"
 	"github.com/gnolang/gno/gnovm/pkg/gnomod"
@@ -321,6 +327,60 @@ func execLint(cmd *lintCmd, args []string, io commands.IO) error {
 					pn, _ := tm.PreprocessFiles(pkgName, pkgPath, fset, false, false, "")
 					ppkg.AddFileTest(pn, fset)
 				}
+
+			}
+
+			rules := []lintrules.LintRule{
+				lintrules.AvlLimitRule{},
+			}
+
+			entries, _ := os.ReadDir(dir)
+			for _, ent := range entries {
+				if ent.IsDir() || filepath.Ext(ent.Name()) != ".gno" {
+					continue
+				}
+
+				filename := filepath.Join(dir, ent.Name())
+				srcBytes, err := os.ReadFile(filename)
+				if err != nil {
+					io.ErrPrintln("lint: cannot read file:", err)
+					continue
+				}
+				src := string(srcBytes)
+
+				fset := token.NewFileSet()
+				f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+				if err != nil {
+					io.ErrPrintfln("lint: parse error in %s: %v", filename, err)
+					hasError = true
+					continue
+				}
+
+				info := &types.Info{
+					Types: make(map[ast.Expr]types.TypeAndValue),
+				}
+
+				conf := types.Config{
+					FakeImportC: true,
+					Error:       func(error) {},
+				}
+				_, _ = conf.Check(pkgPath, fset, []*ast.File{f}, info)
+
+				ast.Inspect(f, func(n ast.Node) bool {
+					for _, rule := range rules {
+						if err := rule.Run(&lintrules.RuleContext{
+							FileSet: fset,
+							Source:  src,
+						}, n); err != nil {
+							le := err.(*lintrules.LintError)
+							pos := fset.Position(le.Pos)
+							io.ErrPrintfln("%s:%d:%d: %s",
+								pos.Filename, pos.Line, pos.Column, le.Message)
+							hasError = true
+						}
+					}
+					return true
+				})
 			}
 
 			// Record results.
