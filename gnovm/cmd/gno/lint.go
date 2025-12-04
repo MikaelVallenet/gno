@@ -8,7 +8,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"go/types"
 	goio "io"
 	"io/fs"
 	"os"
@@ -355,16 +354,6 @@ func execLint(cmd *lintCmd, args []string, io commands.IO) error {
 					hasError = true
 					continue
 				}
-
-				info := &types.Info{
-					Types: make(map[ast.Expr]types.TypeAndValue),
-				}
-
-				conf := types.Config{
-					FakeImportC: true,
-					Error:       func(error) {},
-				}
-				_, _ = conf.Check(pkgPath, fset, []*ast.File{f}, info)
 
 				ast.Inspect(f, func(n ast.Node) bool {
 					for _, rule := range rules {
