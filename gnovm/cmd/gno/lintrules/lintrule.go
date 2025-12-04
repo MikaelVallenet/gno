@@ -3,6 +3,7 @@ package lintrules
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 )
 
 type LintError struct {
@@ -17,6 +18,7 @@ func (e *LintError) Error() string {
 type RuleContext struct {
 	FileSet *token.FileSet
 	Source  string
+	Info    *types.Info
 }
 
 type LintRule interface {

@@ -8,6 +8,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	goio "io"
 	"io/fs"
 	"os"
@@ -355,11 +356,23 @@ func execLint(cmd *lintCmd, args []string, io commands.IO) error {
 					continue
 				}
 
+				info := &types.Info{
+					Types: make(map[ast.Expr]types.TypeAndValue),
+				}
+
+				// XXX: i need the package loader from gno here i guess
+				conf := types.Config{
+					FakeImportC: true,
+					Error:       func(error) {},
+				}
+				_, _ = conf.Check(pkgPath, fset, []*ast.File{f}, info)
+
 				ast.Inspect(f, func(n ast.Node) bool {
 					for _, rule := range rules {
 						if err := rule.Run(&lintrules.RuleContext{
 							FileSet: fset,
 							Source:  src,
+							Info:    info,
 						}, n); err != nil {
 							le := err.(*lintrules.LintError)
 							pos := fset.Position(le.Pos)
