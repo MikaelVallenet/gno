@@ -4,6 +4,10 @@ import "gno.land/p/nt/avl"
 
 var lintest *avl.Tree
 
+type whatever struct{}
+
+func (w whatever) Iterate(start, end string)
+
 func init() {
 	lintest = avl.NewTree()
 	lintest.Set("key1", "value1")
@@ -17,6 +21,8 @@ func JoinValues() string {
 		result += value.(string) + ","
 		return false
 	})
+	w := whatever{}
+	w.Iterate("", "")
 	return result
 }
 
