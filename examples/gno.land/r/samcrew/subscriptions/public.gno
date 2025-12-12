@@ -182,6 +182,30 @@ func NewService(cur realm, displayName, description string, renewalPeriod time.D
 	services.Set(displayName, svc)
 }
 
+// NewServiceSimple creates a new subscription service with simple parameters
+// This is a helper function that simplifies service creation by accepting
+// denomination strings and amounts instead of chain.Coins objects.
+// - displayName: the name of the service
+// - description: a brief description of the service
+// - renewalPeriod: the duration between renewals
+// - nativeDenom: the denomination of native coins (e.g., "ugnot"), empty string for none
+// - nativeAmount: the amount of native coins, 0 for none
+// - grc20Denom: the fully qualified name of GRC20 token (e.g., "gno.land/r/demo/foo20"), empty string for none
+// - grc20Amount: the amount of GRC20 tokens, 0 for none
+func NewServiceSimple(cur realm, displayName, description string, renewalPeriod time.Duration, nativeDenom string, nativeAmount int64, grc20Denom string, grc20Amount int64) {
+	native := chain.Coins{}
+	if nativeDenom != "" && nativeAmount > 0 {
+		native = chain.NewCoins(chain.NewCoin(nativeDenom, nativeAmount))
+	}
+
+	grc20 := chain.Coins{}
+	if grc20Denom != "" && grc20Amount > 0 {
+		grc20 = chain.NewCoins(chain.NewCoin(grc20Denom, grc20Amount))
+	}
+
+	NewService(cur, displayName, description, renewalPeriod, native, grc20)
+}
+
 // ServiceClaimVault allows the owner of a service to claim the funds in the service's vault
 // - displayName: the name of the service
 func ServiceClaimVault(cur realm, displayName string) {
