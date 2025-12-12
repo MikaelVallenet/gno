@@ -80,8 +80,10 @@ func topupNative(cur realm, serviceName string) {
 	if !coinsHasPositive(send) {
 		panic("topup amount must be positive")
 	}
-	for i := range send {
-		send[i].Denom = "/native/" + send[i].Denom
+	
+	prefixedSend, err := prefixCoins(cur, send, nil)
+	if err != nil {
+		panic(err)
 	}
 
 	svc := mustGetServiceByName(serviceName)
@@ -90,7 +92,7 @@ func topupNative(cur realm, serviceName string) {
 	}
 	subValue, _ := svc.subscribers.Get(creator.String())
 	sub := subValue.(*subscription)
-	sub.vault = addCoins(sub.vault, send)
+	sub.vault = addCoins(sub.vault, prefixedSend)
 }
 
 func topupGRC20(cur realm, serviceName string, fqName string, amount int64) {
@@ -99,7 +101,6 @@ func topupGRC20(cur realm, serviceName string, fqName string, amount int64) {
 		panic(errors.New("token not found: " + fqName))
 	}
 	creator := runtime.PreviousRealm().Address()
-	send := chain.NewCoins(chain.NewCoin("/grc20/"+fqName, amount))
 
 	anyAmount := amount == -1
 	if !anyAmount && amount <= 0 {
@@ -108,6 +109,12 @@ func topupGRC20(cur realm, serviceName string, fqName string, amount int64) {
 
 	if anyAmount {
 		amount = int64(token.Allowance(creator, runtime.CurrentRealm().Address()))
+	}
+
+	grc20Send := chain.NewCoins(chain.NewCoin(fqName, amount))
+	prefixedSend, err := prefixCoins(cur, nil, grc20Send)
+	if err != nil {
+		panic(err)
 	}
 
 	teller := token.RealmTeller()
@@ -121,5 +128,5 @@ func topupGRC20(cur realm, serviceName string, fqName string, amount int64) {
 	}
 	subValue, _ := svc.subscribers.Get(creator.String())
 	sub := subValue.(*subscription)
-	sub.vault = addCoins(sub.vault, send)
+	sub.vault = addCoins(sub.vault, prefixedSend)
 }

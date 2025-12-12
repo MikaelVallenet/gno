@@ -32,17 +32,15 @@ func Subscribe(cur realm, serviceName string, fqName string, amount int64) {
 	}
 
 	// Validate GRC20 token exists if fqName is provided
+	var grc20Send chain.Coins
 	if fqName != "" && amount != 0 {
 		if grc20reg.Get(fqName) == nil {
 			panic("GRC20 token not found: " + fqName)
 		}
+		grc20Send = chain.NewCoins(chain.NewCoin(fqName, amount))
 	}
 
 	natSend := banker.OriginSend()
-	grc20Send := chain.Coins{}
-	if amount != 0 {
-		grc20Send = chain.NewCoins(chain.NewCoin("/grc20/"+fqName, amount))
-	}
 	sCoins, err := prefixCoins(cur, natSend, grc20Send)
 	if err != nil {
 		panic(err)
