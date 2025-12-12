@@ -25,9 +25,18 @@ type subscription struct {
 	initialPaid   bool
 }
 
+// dueAmount calculates how much the subscriber owes based on elapsed time.
+// If charge is true, it also deducts the amount from vault and updates lastChargedAt.
+// Returns the amount due and whether the subscription can cover all periods.
 func (sub *subscription) dueAmount(charge bool, renewalPeriod time.Duration, price chain.Coins) (chain.Coins, bool) {
+	if renewalPeriod <= 0 {
+		panic("renewal period must be positive")
+	}
+
 	elapsed := time.Now().Sub(sub.lastChargedAt)
 	periodsElapsed := int64(elapsed / renewalPeriod)
+
+	// If initial payment not yet made, add one period
 	if !sub.initialPaid {
 		periodsElapsed += 1
 	}
@@ -77,7 +86,7 @@ func topupNative(cur realm, serviceName string) {
 
 	svc := mustGetServiceByName(serviceName)
 	if !svc.subscribers.Has(creator.String()) {
-		panic("not subscribed")
+		panic("not subscribed to service: " + serviceName)
 	}
 	subValue, _ := svc.subscribers.Get(creator.String())
 	sub := subValue.(*subscription)
@@ -108,7 +117,7 @@ func topupGRC20(cur realm, serviceName string, fqName string, amount int64) {
 
 	svc := mustGetServiceByName(serviceName)
 	if !svc.subscribers.Has(creator.String()) {
-		panic("not subscribed")
+		panic("not subscribed to service: " + serviceName)
 	}
 	subValue, _ := svc.subscribers.Get(creator.String())
 	sub := subValue.(*subscription)
