@@ -1,2 +1,2 @@
-module = "gno.land/r/samcrew/subscriptions/internal/new_service_script/main"
+module = "gno.land/r/samcrew/subscriptions/internal/native_test_script"
 gno = "0.9"

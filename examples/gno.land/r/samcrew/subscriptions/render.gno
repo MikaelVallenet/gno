@@ -249,13 +249,12 @@ func serviceHandler(res *mux.ResponseWriter, req *mux.Request) {
 		out += md.HorizontalRule()
 		out += md.H4("💡 How to Pay with GRC20 Tokens")
 		out += md.Blockquote("ℹ️ **Important:** To subscribe or top up with GRC20 tokens, you must first approve this realm to spend your tokens.")
-		out += "\n\n" + md.Bold("/r/samcrew/subscription address:") + " `" + runtime.CurrentRealm().Address().String() + "`\n\n"
-		out += md.Bold("Tip:") + "You can find a complete example workflow in the "+md.Link("`internal/`", "/r/samcrew/subscriptions/internal/grc20_test_script/test_grc20.gno")+" folder.") + "\n\n"
+		out += md.Bold("Tip:") + "You can find a complete example workflow in the " + md.Link("`internal/`", "/r/samcrew/subscriptions/internal/grc20_test_script/test_grc20.gno") + " folder." + "\n\n"
 		out += md.Bold("Steps:") + "\n"
 		for i, tokenPath := range grc20Paths {
 			out += md.OrderedList([]string{
 				"Visit the GRC20 token: " + md.Link(tokenPath, tokenPath),
-				"Call the " + md.InlineCode("Approve") + " function with:\n   - " + md.Bold("spender:") + " " + md.InlineCode(r.PkgPath()) + "\n   - " + md.Bold("amount:") + " the amount you want to deposit (or a large value for multiple top-ups)",
+				"Call the " + md.InlineCode("Approve") + " function with:\n   - " + md.Bold("spender:") + " " + md.InlineCode(runtime.CurrentRealm().Address().String()) + "\n   - " + md.Bold("amount:") + " the amount you want to deposit (or a large value for multiple top-ups)",
 				"Return here and use " + md.Link("Subscribe", linkpath+"$help&func=Subscribe&serviceName="+url.QueryEscape(serviceName)) + " or " + md.Link("Top Up", linkpath+"$help&func=Topup&serviceName="+url.QueryEscape(serviceName)) + " with the GRC20 token details",
 			})
 			if i < len(grc20Paths)-1 {
@@ -311,7 +310,7 @@ func serviceHandler(res *mux.ResponseWriter, req *mux.Request) {
 		}
 
 		// Show stats for current page
-		out += ufmt.Sprintf("On this page: 🟢 %d active • 🔴 %d inactive", 
+		out += ufmt.Sprintf("On this page: 🟢 %d active • 🔴 %d inactive",
 			activeCount, inactiveCount)
 
 		out += t.String()

@@ -19,7 +19,7 @@ gnokey maketx run \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a \
+  KEY \
   ./internal/new_service_script/new_service.gno
 
 # Step 2: Subscribe to the service with native coins
@@ -35,7 +35,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 
 # Step 3 (Optional): Top up with more native coins
 gnokey maketx call \
@@ -50,7 +50,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 */
 func main() {
 	// Create a new service with 30-day renewal period

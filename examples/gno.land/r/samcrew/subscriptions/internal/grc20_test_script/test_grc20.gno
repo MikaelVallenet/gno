@@ -23,7 +23,7 @@ gnokey maketx run \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a \
+  KEY \
   ./internal/grc20_test_script/test_grc20.gno
 
 # Step 2 (Testing only): Get some test tokens from the faucet
@@ -36,7 +36,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 
 # Step 3: Approve the subscription realm to spend your GRC20 tokens
 # First, get the subscription realm's address with:
@@ -52,7 +52,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 
 # Step 4: Subscribe to the service with GRC20 tokens
 gnokey maketx call \
@@ -66,7 +66,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 
 # Step 5 (Optional): Top up with more GRC20 tokens
 # First approve again if needed, then:
@@ -81,7 +81,7 @@ gnokey maketx call \
   --broadcast \
   --chainid dev \
   --remote localhost:26657 \
-  a
+  KEY
 */
 func main() {
 	// Create a new service with GRC20 token pricing
