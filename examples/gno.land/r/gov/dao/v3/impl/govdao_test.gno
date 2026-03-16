@@ -146,7 +146,7 @@ func TestCreateProposalAndVote(cur realm, t *testing.T) {
 	urequire.Equal(t, false, accepted)
 
 	urequire.Equal(t, true, contains(dao.Render("0"), "**PROPOSAL HAS BEEN DENIED**"))
-	urequire.Equal(t, true, contains(dao.Render("0"), "NO PERCENT: 68.42105263157895%"))
+	urequire.Equal(t, true, contains(dao.Render("0"), "NO PERCENT: 81.25%"))
 }
 
 func TestExecutorCreationRealm(cur realm, t *testing.T) {
@@ -356,9 +356,9 @@ func TestAbstainVote(cur realm, t *testing.T) {
 	})
 
 	// Verify render shows correct percentages
-	urequire.Equal(t, true, contains(dao.Render(pid.String()), "YES PERCENT: 68.42105263157895%"))
+	urequire.Equal(t, true, contains(dao.Render(pid.String()), "YES PERCENT: 81.25%"))
 	urequire.Equal(t, true, contains(dao.Render(pid.String()), "NO PERCENT: 0%"))
-	urequire.Equal(t, true, contains(dao.Render(pid.String()), "ABSTAIN PERCENT: 15.789473684210526%"))
+	urequire.Equal(t, true, contains(dao.Render(pid.String()), "ABSTAIN PERCENT: 18.75%"))
 
 	// Supermajority reached despite one abstain voter
 	accepted := dao.ExecuteProposal(cross, pid)

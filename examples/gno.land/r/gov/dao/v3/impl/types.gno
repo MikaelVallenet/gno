@@ -74,13 +74,19 @@ func newEmptyVoteStore() memberstore.MembersByTier {
 }
 
 func newProposalStatus(allowedToVote []string) *proposalStatus {
+	members := getMembers(cross)
+	var totalPower float64
+	for _, tn := range allowedToVote {
+		power := memberstore.GetTierPower(tn, members)
+		totalPower += power * float64(members.GetTierSize(tn))
+	}
 	return &proposalStatus{
 		YesVotes:           newEmptyVoteStore(),
 		NoVotes:            newEmptyVoteStore(),
 		AbstainVotes:       newEmptyVoteStore(),
 		AllVotes:           newEmptyVoteStore(),
 		TiersAllowedToVote: allowedToVote,
-		TotalPower:         getMembers(cross).GetTotalPower(),
+		TotalPower:         totalPower,
 	}
 }
 
