@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -15,6 +16,11 @@ import (
 	"github.com/gnolang/faucet"
 	"github.com/gnolang/faucet/spec"
 )
+
+// contextKey is an unexported type for context keys in this package.
+type contextKey int
+
+const remoteIPContextKey contextKey = iota
 
 // ipMiddleware returns the IP verification middleware, using the given subnet throttler
 func ipMiddleware(trustedProxyCount uint64, st *ipThrottler) func(next http.Handler) http.Handler {
@@ -85,15 +91,18 @@ func ipMiddleware(trustedProxyCount uint64, st *ipThrottler) func(next http.Hand
 					return
 				}
 
+				// Store the resolved IP in the context for use by RPC middlewares
+				ctx := context.WithValue(r.Context(), remoteIPContextKey, hostAddr.String())
+
 				// Continue with serving the faucet request
-				next.ServeHTTP(w, r)
+				next.ServeHTTP(w, r.WithContext(ctx))
 			},
 		)
 	}
 }
 
 // captchaMiddleware returns the captcha middleware, if any
-func captchaMiddleware(secret string) faucet.Middleware {
+func captchaMiddleware(secret, sitekey string, logger *slog.Logger) faucet.Middleware {
 	return func(next faucet.HandlerFunc) faucet.HandlerFunc {
 		return func(ctx context.Context, req *spec.BaseJSONRequest) *spec.BaseJSONResponse {
 			// Parse the request meta to extract the captcha secret
@@ -110,8 +119,11 @@ func captchaMiddleware(secret string) faucet.Middleware {
 				)
 			}
 
+			// Extract the resolved client IP stored by ipMiddleware
+			remoteIP, _ := ctx.Value(remoteIPContextKey).(string)
+
 			// Verify the captcha response
-			if err := checkHcaptcha(secret, strings.TrimSpace(meta.Captcha)); err != nil {
+			if err := checkHcaptcha(secret, strings.TrimSpace(meta.Captcha), remoteIP, sitekey, logger); err != nil {
 				return spec.NewJSONResponse(
 					req.ID,
 					nil,
@@ -126,7 +138,7 @@ func captchaMiddleware(secret string) faucet.Middleware {
 }
 
 // checkHcaptcha checks the captcha challenge
-func checkHcaptcha(secret, response string) error {
+func checkHcaptcha(secret, response, remoteIP, sitekey string, logger *slog.Logger) error {
 	// Create an HTTP client with a timeout
 	client := &http.Client{
 		Timeout: time.Second * 10,
@@ -136,6 +148,18 @@ func checkHcaptcha(secret, response string) error {
 	form := url.Values{}
 	form.Set("secret", secret)
 	form.Set("response", response)
+	if remoteIP != "" {
+		form.Set("remoteip", remoteIP)
+	}
+	if sitekey != "" {
+		form.Set("sitekey", sitekey)
+	}
+
+	logger.Debug("sending hcaptcha verification request",
+		slog.String("remoteip", remoteIP),
+		slog.Bool("secret_set", secret != ""),
+		slog.Bool("sitekey_set", sitekey != ""),
+	)
 
 	// Create the request
 	req, err := http.NewRequest(
@@ -166,6 +190,13 @@ func checkHcaptcha(secret, response string) error {
 	if err = json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		return fmt.Errorf("failed to decode response, %w", err)
 	}
+
+	logger.Debug("received hcaptcha verification response",
+		slog.String("remoteip", remoteIP),
+		slog.Bool("success", body.Success),
+		slog.String("hostname", body.Hostname),
+		slog.Any("error_codes", body.ErrorCodes),
+	)
 
 	// Check if the hcaptcha verification was successful
 	if !body.Success {
