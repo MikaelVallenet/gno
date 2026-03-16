@@ -198,6 +198,8 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
+			validate(Int8Kind, StringKind, nil)
+
 			tv.V = alloc.NewString(string(rune(tv.GetInt8())))
 			tv.T = t
 			tv.ClearNum()
@@ -421,7 +423,7 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Int64Kind, Uint64Kind, nil)
+			validate(Int64Kind, StringKind, nil)
 
 			tv.V = alloc.NewString(string(rune(tv.GetInt64())))
 			tv.T = t
