@@ -466,52 +466,29 @@ func TestConvertTo(t *testing.T) {
 		}`,
 			`test/main.go:5:12-21: constant 18446744073709551615 overflows Uint16Kind`,
 		},
+		// const int to string yields a string of one rune (matches Go behavior)
+		{
+			`package test
+
+		func main() {
+			const a int8 = 65
+			println(string(a))
+		}`,
+			``,
+		},
+		{
+			`package test
+
+		func main() {
+			const a int64 = 65
+			println(string(a))
+		}`,
+			``,
+		},
 	}
 
 	for _, tc := range tests {
 		testFunc(tc.source, tc.msg)
-	}
-}
-
-func TestConvertToConstIntToString(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		fromT   PrimitiveType
-		toT     PrimitiveType
-		setup   func(tv *TypedValue)
-		wantMsg string
-	}{
-		{
-			name:  "Int8Kind to StringKind",
-			fromT: Int8Type,
-			toT:   StringType,
-			setup: func(tv *TypedValue) {
-				tv.SetInt8(65)
-			},
-			wantMsg: "cannot convert constant of type Int8Kind to StringKind",
-		},
-		{
-			name:  "Int64Kind to StringKind",
-			fromT: Int64Type,
-			toT:   StringType,
-			setup: func(tv *TypedValue) {
-				tv.SetInt64(65)
-			},
-			wantMsg: "cannot convert constant of type Int64Kind to StringKind",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tv := TypedValue{T: tc.fromT}
-			tc.setup(&tv)
-
-			assert.PanicsWithValue(t, tc.wantMsg, func() {
-				ConvertTo(nilAllocator, nil, &tv, tc.toT, true)
-			})
-		})
 	}
 }
 

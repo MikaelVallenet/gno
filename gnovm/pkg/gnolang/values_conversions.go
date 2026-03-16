@@ -128,7 +128,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(IntKind, StringKind, nil)
 			tv.V = alloc.NewString(string(rune(tv.GetInt())))
 			tv.T = t
 			tv.ClearNum()
@@ -198,8 +197,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Int8Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetInt8())))
 			tv.T = t
 			tv.ClearNum()
@@ -271,8 +268,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Int16Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetInt16())))
 			tv.T = t
 			tv.ClearNum()
@@ -346,8 +341,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Int32Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(tv.GetInt32()))
 			tv.T = t
 			tv.ClearNum()
@@ -423,8 +416,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Int64Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetInt64())))
 			tv.T = t
 			tv.ClearNum()
@@ -500,8 +491,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(UintKind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetUint())))
 			tv.T = t
 			tv.ClearNum()
@@ -569,8 +558,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Uint8Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetUint8())))
 			tv.T = t
 			tv.ClearNum()
@@ -640,8 +627,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Uint16Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetUint16())))
 			tv.T = t
 			tv.ClearNum()
@@ -713,8 +698,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Uint32Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetUint32())))
 			tv.T = t
 			tv.ClearNum()
@@ -792,8 +775,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 			tv.T = t
 			tv.SetFloat64(x)
 		case StringKind:
-			validate(Uint64Kind, StringKind, nil)
-
 			tv.V = alloc.NewString(string(rune(tv.GetUint64())))
 			tv.T = t
 			tv.ClearNum()
