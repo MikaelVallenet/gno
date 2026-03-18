@@ -39,7 +39,6 @@ func X_bankerGetCoins(m *gno.Machine, bt uint8, addr string) (denoms []string, a
 }
 
 func X_bankerSendCoins(m *gno.Machine, bt uint8, fromS, toS string, denoms []string, amounts []int64) {
-
 	// bt != BankerTypeReadonly (checked in gno)
 
 	ctx := execctx.GetContext(m)
