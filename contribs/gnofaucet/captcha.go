@@ -68,7 +68,7 @@ func execCaptcha(ctx context.Context, cfg *captchaCfg, io commands.IO) error {
 
 	// Prepare the middlewares
 	httpMiddlewares := []func(http.Handler) http.Handler{
-		ipMiddleware(cfg.rootCfg.trustedProxyCount, st),
+		ipMiddleware(cfg.rootCfg.trustedProxyCount, st, logger),
 	}
 
 	rpcMiddlewares := []faucet.Middleware{

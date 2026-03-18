@@ -23,7 +23,7 @@ type contextKey int
 const remoteIPContextKey contextKey = iota
 
 // ipMiddleware returns the IP verification middleware, using the given subnet throttler
-func ipMiddleware(trustedProxyCount uint64, st *ipThrottler) func(next http.Handler) http.Handler {
+func ipMiddleware(trustedProxyCount uint64, st *ipThrottler, logger *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
@@ -45,9 +45,21 @@ func ipMiddleware(trustedProxyCount uint64, st *ipThrottler) func(next http.Hand
 				// For N trusted proxies, the client IP is at index len(parts) - N.
 				// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-For#selecting_an_ip_address
 				if trustedProxyCount > 0 {
-					if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+					xff := r.Header.Get("X-Forwarded-For")
+					if xff == "" {
+						logger.Warn("trusted-proxy-count is set but X-Forwarded-For header is missing, falling back to RemoteAddr",
+							slog.Uint64("trusted_proxy_count", trustedProxyCount),
+							slog.String("remote_addr", host),
+						)
+					} else {
 						parts := strings.Split(xff, ",")
-						if uint64(len(parts)) >= trustedProxyCount {
+						if uint64(len(parts)) < trustedProxyCount {
+							logger.Warn("X-Forwarded-For has fewer entries than trusted-proxy-count, falling back to RemoteAddr",
+								slog.Uint64("trusted_proxy_count", trustedProxyCount),
+								slog.Int("xff_entries", len(parts)),
+								slog.String("remote_addr", host),
+							)
+						} else {
 							idx := uint64(len(parts)) - trustedProxyCount
 							host = strings.TrimSpace(parts[idx])
 							if host == "" {

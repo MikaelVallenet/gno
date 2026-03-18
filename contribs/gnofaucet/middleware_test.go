@@ -38,7 +38,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(0, st)
+		mw := ipMiddleware(0, st, discardLogger)
 		xff := map[string]string{"X-Forwarded-For": "9.9.9.9"}
 
 		for i := 0; i < maxRequestsPerMinute; i++ {
@@ -54,7 +54,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(1, st)
+		mw := ipMiddleware(1, st, discardLogger)
 
 		// Exhaust rate limit for 10.0.0.1 (rightmost) with different spoofed leftmost IPs
 		for i := 0; i < maxRequestsPerMinute; i++ {
@@ -72,7 +72,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(1, st)
+		mw := ipMiddleware(1, st, discardLogger)
 
 		assert.Equal(t, http.StatusOK, sendRequest(mw, "172.16.0.1:12345", map[string]string{
 			"X-Forwarded-For": "10.0.0.2",
@@ -83,7 +83,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(0, st)
+		mw := ipMiddleware(0, st, discardLogger)
 
 		for i := 0; i < maxRequestsPerMinute; i++ {
 			assert.Equal(t, http.StatusOK, sendRequest(mw, "192.168.1.3:12345", nil))
@@ -98,7 +98,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(2, st) // 2 trusted proxies
+		mw := ipMiddleware(2, st, discardLogger) // 2 trusted proxies
 
 		// XFF: "spoofed, real-client, proxy1" — with 2 trusted proxies, idx = 3-2 = 1 → real-client
 		for i := 0; i < maxRequestsPerMinute; i++ {
@@ -116,7 +116,7 @@ func TestIPMiddleware(t *testing.T) {
 		t.Parallel()
 
 		st := newIPThrottler(defaultRateLimitInterval, defaultCleanTimeout)
-		mw := ipMiddleware(3, st) // 3 trusted proxies
+		mw := ipMiddleware(3, st, discardLogger) // 3 trusted proxies
 
 		// XFF has only 2 entries, fewer than trustedProxyCount=3 → fall back to RemoteAddr
 		for i := 0; i < maxRequestsPerMinute; i++ {
