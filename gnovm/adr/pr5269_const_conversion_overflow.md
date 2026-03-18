@@ -18,22 +18,14 @@ the `int64()` cast so the comparison stays in uint64 space.
 
 ### Error messages: match Go's logic
 
-Go's type checker (`src/go/types/conversions.go`) uses two distinct error formats:
+Before all validation failures used a single generic message:
+`"cannot convert constant of type IntKind to UintKind"` — no actual value shown.
 
-```go
-if isInteger(x.typ()) && isInteger(u) {
-    cause = "constant %s overflows %s"
-} else {
-    cause = "cannot convert %s to type %s"
-}
-```
+After, matches Go's type checker (`src/go/types/conversions.go`):
+- **Integer→integer:** `"constant -1 overflows UintKind"` (shows the value)
+- **Float→integer:** `"cannot convert constant of type Float32Kind to Int32Kind"`
 
-- **Both source and target are integers** → `"constant VALUE overflows TARGET"`
-  (e.g., `constant 18446744073709551615 overflows Int8Kind`)
-- **Otherwise** (e.g., float→int) → `"cannot convert constant of type FROM to TO"`
-  (e.g., `cannot convert constant of type Float32Kind to Int32Kind`)
-
-The `validate` closure in `ConvertTo` mirrors this with an `isIntegerKind` helper.
+The `validate` closure uses `isIntegerKind` (package-level in `type_check.go`) to pick the format.
 
 ### int→string const conversions are valid
 
@@ -51,7 +43,6 @@ The actual int→string conversion happens at runtime via `op_expressions.go:727
 |------|------|
 | `gnovm/pkg/gnolang/values_conversions.go` | `ConvertTo` function with `validate` closure |
 | `gnovm/pkg/gnolang/preprocess.go:1539` | `isIntNum(ct)` guard — controls which const conversions go through `ConvertTo` |
-| `gnovm/pkg/gnolang/op_expressions.go:727` | Runtime conversion path (`isConst=false`) |
 | `gnovm/tests/files/convert9*.gno` | Filetests for uint64 overflow and int→string |
 
 ## Consequences

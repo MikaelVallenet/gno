@@ -49,16 +49,6 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 		return
 	}
 
-	isIntegerKind := func(k Kind) bool {
-		switch k {
-		case IntKind, Int8Kind, Int16Kind, Int32Kind, Int64Kind,
-			UintKind, Uint8Kind, Uint16Kind, Uint32Kind, Uint64Kind:
-			return true
-		default:
-			return false
-		}
-	}
-
 	validate := func(from Kind, to Kind, cmp func() bool) {
 		if isConst {
 			if cmp == nil {
