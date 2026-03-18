@@ -6,7 +6,6 @@ import (
 	gno "github.com/gnolang/gno/gnovm/pkg/gnolang"
 	"github.com/gnolang/gno/gnovm/stdlibs/internal/execctx"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
-	"github.com/gnolang/gno/tm2/pkg/overflow"
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
 
@@ -39,18 +38,7 @@ func X_bankerGetCoins(m *gno.Machine, bt uint8, addr string) (denoms []string, a
 	return ExpandCoins(coins)
 }
 
-// GasCostBankerSendPerCoin is the gas cost per coin denomination in a SendCoins call.
-// Addresses are constant-length (bech32), so the variable cost is proportional to
-// the number of coins being transferred. Store I/O costs are already charged by the
-// gas-metered KV store; this covers Go-side CPU overhead (address parsing, coin validation).
-// Calibrated via BenchmarkBankerSendOverhead: ~2-3 ns marginal cost per coin on Apple M5.
-// Store I/O costs (ReadCostFlat=1000, WriteCostFlat=2000) provide primary DoS protection.
-const GasCostBankerSendPerCoin int64 = 3
-
 func X_bankerSendCoins(m *gno.Machine, bt uint8, fromS, toS string, denoms []string, amounts []int64) {
-	if m.GasMeter != nil {
-		m.GasMeter.ConsumeGas(overflow.Mulp(int64(len(denoms)), GasCostBankerSendPerCoin), "bankerSendCoins")
-	}
 
 	// bt != BankerTypeReadonly (checked in gno)
 

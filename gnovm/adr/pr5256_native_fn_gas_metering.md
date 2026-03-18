@@ -19,7 +19,6 @@ actual work done. Each function charges based on the dimension that drives its c
 |----------|-------------------|---------|-------------|
 | `sha256.Sum256` | Per 64-byte block | `(len(data)/64 + 1) * cost` | `GasCostSha256PerBlock = 20` |
 | `ed25519.Verify` | Base + per 128-byte block | `base + (len(msg)/128 + 1) * cost` | `Base = 25000, PerBlock = 60` |
-| `banker.SendCoins` | Per coin denomination | `len(denoms) * cost` | `GasCostBankerSendPerCoin = 3` |
 | `chain.Emit` | Per byte of attr data | `totalBytes * cost` | `GasCostEmitPerByte = 1` |
 | `sys/params.Set*` | Per byte of value data | `totalBytes * cost` | `GasCostParamPerByte = 1` |
 
@@ -29,8 +28,6 @@ Constants calibrated via Go benchmarks (Apple M5, `go test -bench`):
 - 1 gas ≈ 1 nanosecond of CPU time (consistent with `GasFactorCPU = 1` in machine.go).
 - SHA-256: ~18-20 ns per 64-byte block.
 - Ed25519: ~25,500 ns fixed (EC operations) + ~63 ns per 128-byte SHA-512 block.
-- Banker: ~2-3 ns marginal per coin. Store I/O costs (ReadCostFlat=1000, WriteCostFlat=2000)
-  already provide primary DoS protection via the gas-metered KV store.
 - Emit/Params: <1 ns/byte. Allocation gas and store gas provide primary protection.
 
 ### Design Choices
@@ -43,15 +40,16 @@ granularity. Ed25519 internally uses SHA-512 (128-byte blocks) for message hashi
 curve (~25µs fixed cost) plus message hashing (O(n)). Without a base cost, small messages would
 be severely undercharged relative to their actual CPU cost.
 
-**Per-coin for banker (not per-byte)**: Addresses are constant-length bech32 strings. The variable
-cost scales with the number of coin denominations, each requiring separate balance operations.
-The bank keeper's KV store operations already charge gas through the gas-metered store, so the
-native function gas only covers Go-side CPU overhead.
+**No native gas metering for banker**: Benchmarking showed the Go-side CPU overhead of
+`SendCoins` is negligible (~2-3 ns/coin for `CompactCoins`). The expensive work — KV store
+reads and writes per coin denomination — is already charged by the gas-metered store
+(ReadCostFlat=1000, WriteCostFlat=2000 per operation). Adding redundant native gas metering
+would provide no meaningful DoS protection beyond what the store layer already guarantees.
 
 ## Alternatives Considered
 
-- **Per-byte for all functions**: Rejected — wrong dimension for banker (addresses are fixed-length)
-  and overstates granularity for hash functions (sub-block inputs have identical cost).
+- **Per-byte for all functions**: Rejected — overstates granularity for hash functions
+  (sub-block inputs have identical cost).
 - **Per-call flat cost**: Rejected — doesn't prevent large-input DoS for sha256/ed25519.
 - **Store-layer only**: Rejected — doesn't capture CPU-intensive operations like crypto that
   bypass the KV store.
