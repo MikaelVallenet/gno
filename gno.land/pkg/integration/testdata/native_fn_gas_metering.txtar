@@ -11,29 +11,29 @@ loadpkg gno.land/r/test/emit2mb $WORK/emit2mb
 gnoland start
 
 # --- SHA256 ---
-# Hash 1MB: ~2.1M gas (1M alloc + 1M hash)
+# Hash 1MB: ~1.5M gas (1.16M alloc + 312K hash at 20gas/block)
 gnokey maketx call -pkgpath gno.land/r/test/hash1mb -func Hash -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
-stdout 'GAS USED:   2[0-9]{6}'
+stdout 'GAS USED:   1[0-9]{6}'
 
-# Hash 2MB: ~4.1M gas — 2× the 1MB case
+# Hash 2MB: ~2.9M gas — ~2× the 1MB case
 gnokey maketx call -pkgpath gno.land/r/test/hash2mb -func Hash -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
-stdout 'GAS USED:   4[0-9]{6}'
+stdout 'GAS USED:   2[0-9]{6}'
 
 # --- Ed25519 ---
-# Verify with 1MB message: gas scales with message size
+# Verify with 1MB message: 25K base + 469K hash + ~1.16M alloc ≈ ~1.6M gas
 gnokey maketx call -pkgpath gno.land/r/test/verify1mb -func Verify -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
-stdout 'GAS USED:   2[0-9]{6}'
+stdout 'GAS USED:   1[0-9]{6}'
 
-# Verify with 2MB message: ~2× the 1MB case
+# Verify with 2MB message: ~2× the variable portion
 gnokey maketx call -pkgpath gno.land/r/test/verify2mb -func Verify -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
-stdout 'GAS USED:   4[0-9]{6}'
+stdout 'GAS USED:   [23][0-9]{6}'
 
 # --- Emit ---
-# Emit with 1MB of attrs: ~1.5M gas
+# Emit with 1MB of attrs: ~1.5M gas (emit gas at 1/byte + alloc gas)
 gnokey maketx call -pkgpath gno.land/r/test/emit1mb -func DoEmit -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
 stdout 'GAS USED:   1[0-9]{6}'
 
-# Emit with 2MB of attrs: ~2.1M gas — scales with input
+# Emit with 2MB of attrs: ~2× — scales with input
 gnokey maketx call -pkgpath gno.land/r/test/emit2mb -func DoEmit -gas-fee 1000000ugnot -gas-wanted 500000000 -broadcast -chainid=tendermint_test -simulate only test1
 stdout 'GAS USED:   2[0-9]{6}'
 

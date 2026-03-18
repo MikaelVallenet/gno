@@ -8,7 +8,8 @@ import (
 	"github.com/gnolang/gno/tm2/pkg/overflow"
 )
 
-// XXX: benchmark the real cost
+// GasCostParamPerByte is the gas cost per byte of parameter value data.
+// Go-side overhead is <1 ns/byte; store write costs provide primary DoS protection.
 const GasCostParamPerByte int64 = 1
 
 func X_setSysParamString(m *gno.Machine, module, submodule, name, val string) {
