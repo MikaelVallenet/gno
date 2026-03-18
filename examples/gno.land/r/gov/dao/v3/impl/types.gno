@@ -100,7 +100,11 @@ func (ps *proposalStatus) votePowerPercent(votes memberstore.MembersByTier) floa
 		vp = vp + (power * float64(ts))
 		return false
 	})
-	return (vp / ps.totalPower()) * 100
+	tp := ps.totalPower()
+	if tp == 0 {
+		return 0
+	}
+	return (vp / tp) * 100
 }
 
 func (ps *proposalStatus) YesPercent() float64     { return ps.votePowerPercent(ps.YesVotes) }
