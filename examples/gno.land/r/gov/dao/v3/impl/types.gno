@@ -57,8 +57,6 @@ type proposalStatus struct {
 	DeniedReason string
 
 	TiersAllowedToVote []string
-
-	TotalPower float64 // TotalPower is the power of all the members existing when this proposal was created.
 }
 
 func getMembers(cur realm) memberstore.MembersByTier {
@@ -74,31 +72,35 @@ func newEmptyVoteStore() memberstore.MembersByTier {
 }
 
 func newProposalStatus(allowedToVote []string) *proposalStatus {
-	members := getMembers(cross)
-	var totalPower float64
-	for _, tn := range allowedToVote {
-		power := memberstore.GetTierPower(tn, members)
-		totalPower += power * float64(members.GetTierSize(tn))
-	}
 	return &proposalStatus{
 		YesVotes:           newEmptyVoteStore(),
 		NoVotes:            newEmptyVoteStore(),
 		AbstainVotes:       newEmptyVoteStore(),
 		AllVotes:           newEmptyVoteStore(),
 		TiersAllowedToVote: allowedToVote,
-		TotalPower:         totalPower,
 	}
 }
 
+func (ps *proposalStatus) totalPower() float64 {
+	members := getMembers(cross)
+	var tp float64
+	for _, tn := range ps.TiersAllowedToVote {
+		power := memberstore.GetTierPower(tn, members)
+		tp += power * float64(members.GetTierSize(tn))
+	}
+	return tp
+}
+
 func (ps *proposalStatus) votePowerPercent(votes memberstore.MembersByTier) float64 {
+	members := getMembers(cross)
 	var vp float64
 	memberstore.IterateTiers(func(tn string, tier memberstore.Tier) bool {
-		power := memberstore.GetTierPower(tn, getMembers(cross))
+		power := memberstore.GetTierPower(tn, members)
 		ts := votes.GetTierSize(tn)
 		vp = vp + (power * float64(ts))
 		return false
 	})
-	return (vp / ps.TotalPower) * 100
+	return (vp / ps.totalPower()) * 100
 }
 
 func (ps *proposalStatus) YesPercent() float64     { return ps.votePowerPercent(ps.YesVotes) }
@@ -115,6 +117,7 @@ func (ps *proposalStatus) IsAllowed(tier string) bool {
 	return false
 }
 
+// XXX: can be optimized by passing down total power to Yes/No/Abstain percent fn to avoid re-computing
 func (ps *proposalStatus) String() string {
 	var sb strings.Builder
 	sb.WriteString("### Stats\n")
@@ -161,13 +164,14 @@ func writeVotes(sb *strings.Builder, t memberstore.MembersByTier, title string) 
 	if t.Size() == 0 {
 		return
 	}
+	members := getMembers(cross)
 	t.Iterate("", "", func(tn string, value interface{}) bool {
 		_, ok := memberstore.GetTier(tn)
 		if !ok {
 			panic("tier not found")
 		}
 
-		power := memberstore.GetTierPower(tn, getMembers(cross))
+		power := memberstore.GetTierPower(tn, members)
 
 		sb.WriteString(ufmt.Sprintf("%v from %v (VPPM %v):\n\n", title, tn, power))
 		ms, _ := value.(*avl.Tree)
