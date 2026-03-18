@@ -49,13 +49,26 @@ func ConvertTo(alloc *Allocator, store Store, tv *TypedValue, t Type, isConst bo
 		return
 	}
 
+	isIntegerKind := func(k Kind) bool {
+		switch k {
+		case IntKind, Int8Kind, Int16Kind, Int32Kind, Int64Kind,
+			UintKind, Uint8Kind, Uint16Kind, Uint32Kind, Uint64Kind:
+			return true
+		default:
+			return false
+		}
+	}
+
 	validate := func(from Kind, to Kind, cmp func() bool) {
 		if isConst {
 			if cmp == nil {
-				panic(fmt.Sprintf("cannot convert constant of type %s to %s", from, to))
+				panic(fmt.Sprintf("unexpected conversion from %s to %s", from, to))
 			}
 			if !cmp() {
-				panic(fmt.Sprintf("constant %s overflows %s", tv.ProtectedSprint(newSeenValues(), false), to))
+				if isIntegerKind(from) && isIntegerKind(to) {
+					panic(fmt.Sprintf("constant %s overflows %s", tv.ProtectedSprint(newSeenValues(), false), to))
+				}
+				panic(fmt.Sprintf("cannot convert constant of type %s to %s", from, to))
 			}
 		}
 	}
