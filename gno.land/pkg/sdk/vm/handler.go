@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	abci "github.com/gnolang/gno/tm2/pkg/bft/abci/types"
+	"github.com/gnolang/gno/tm2/pkg/errors"
 	"github.com/gnolang/gno/tm2/pkg/sdk"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/gno/tm2/pkg/version"
@@ -258,8 +259,18 @@ func (vh vmHandler) queryStorage(ctx sdk.Context, req abci.RequestQuery) (res ab
 // ----------------------------------------
 // misc
 
+// infoProvider is implemented by errors that carry structured metadata
+// for the ABCI Info field. This allows clients to parse and act on
+// error context (e.g. CLA signing hints).
+type infoProvider interface {
+	InfoKV() string
+}
+
 func abciResult(err error) sdk.Result {
 	res := sdk.ABCIResultFromError(err)
+	if ip, ok := errors.Cause(err).(infoProvider); ok {
+		res.Info += ip.InfoKV() + "\n"
+	}
 	res.Info += "vm.version=" + version.Version
 	return res
 }

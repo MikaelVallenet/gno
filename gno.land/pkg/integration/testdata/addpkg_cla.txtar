@@ -50,8 +50,14 @@ gnokey query vm/qeval --data "gno.land/r/sys/cla.HasValidSignature(\"$alice_user
 stdout 'false bool'
 
 # Alice tries to deploy without signing CLA - should FAIL
+# The error should include CLA metadata in the Info field and a signing hint
 ! gnokey maketx addpkg -pkgdir $WORK/pkg -pkgpath gno.land/r/$alice_user_addr/pkg2 -gas-fee 1000000ugnot -gas-wanted 10000000 -broadcast -chainid=tendermint_test alice
 stderr 'has not signed the required CLA'
+stdout 'cla.realm=gno.land/r/sys/cla'
+stdout 'cla.hash=abc123hash'
+stdout 'cla.url=https://example.com/cla-v1'
+stdout 'To sign the CLA, run:'
+stdout 'gnokey maketx call -pkgpath gno.land/r/sys/cla -func Sign -args abc123hash'
 
 # ============================================================
 # Test 3: Sign CLA, then deploy successfully
@@ -88,9 +94,12 @@ stdout OK!
 gnokey query vm/qeval --data "gno.land/r/sys/cla.HasValidSignature(\"$alice_user_addr\")"
 stdout 'false bool'
 
-# Alice tries to deploy - should FAIL
+# Alice tries to deploy - should FAIL (with updated hash in hint)
 ! gnokey maketx addpkg -pkgdir $WORK/pkg -pkgpath gno.land/r/$alice_user_addr/pkg4 -gas-fee 1000000ugnot -gas-wanted 10000000 -broadcast -chainid=tendermint_test alice
 stderr 'has not signed the required CLA'
+stdout 'cla.hash=newhash456'
+stdout 'cla.url=https://example.com/cla-v2'
+stdout 'gnokey maketx call -pkgpath gno.land/r/sys/cla -func Sign -args newhash456'
 
 # Alice re-signs with new hash
 gnokey maketx call -pkgpath gno.land/r/sys/cla -func Sign -args "newhash456" -gas-fee 100000ugnot -gas-wanted 2000000 -broadcast -chainid tendermint_test alice

@@ -82,6 +82,9 @@ func execBroadcast(cfg *BroadcastCfg, args []string, io commands.IO) error {
 	if res.CheckTx.IsErr() {
 		return errors.New("transaction failed %#v\nlog %s", res, res.CheckTx.Log)
 	} else if res.DeliverTx.IsErr() {
+		if cfg.RootCfg.OnTxError != nil {
+			cfg.RootCfg.OnTxError(tx, res)
+		}
 		io.Println("TX HASH:   ", base64.StdEncoding.EncodeToString(res.Hash))
 		return errors.New("transaction failed %#v\nlog %s", res, res.DeliverTx.Log)
 	} else {

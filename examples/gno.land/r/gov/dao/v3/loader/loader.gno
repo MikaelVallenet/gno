@@ -32,6 +32,9 @@ func init() {
 	memberstore.Get().SetTier(memberstore.T2)
 	memberstore.Get().SetTier(memberstore.T3)
 
+	// Add member for local dev testing (CLA setup improvement).
+	memberstore.Get().SetMember(memberstore.T1, address("g1qglwpaaw8qt39dazvq883mu76chaamqdlmsx6z"), &memberstore.Member{InvitationPoints: 3})
+
 	// Set the DAO implementation.  AllowedDAOs is intentionally left empty
 	// so that the genesis MsgRun can manipulate the memberstore directly.
 	dao.UpdateImpl(cross, dao.UpdateRequest{

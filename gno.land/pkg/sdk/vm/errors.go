@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gnolang/gno/tm2/pkg/errors"
@@ -70,6 +71,40 @@ func ErrInvalidExpr(msg string) error {
 
 func ErrInvalidPackage(msg string) error {
 	return errors.Wrap(InvalidPackageError{}, msg)
+}
+
+// CLAUnsignedError is returned when a user tries to deploy a package without
+// signing the required CLA. It carries CLA realm state so clients can build
+// actionable hints (e.g. a gnokey command to sign).
+type CLAUnsignedError struct {
+	abciError
+	Address   string `json:"address"`    // bech32 address of the deployer
+	RealmPath string `json:"realm_path"` // CLA realm package path
+	Hash      string `json:"hash"`       // required CLA hash
+	URL       string `json:"url"`        // URL to the CLA document
+}
+
+func (e CLAUnsignedError) Error() string {
+	return fmt.Sprintf("address %s has not signed the required CLA", e.Address)
+}
+
+// Is allows errors.Is(err, CLAUnsignedError{}) to match regardless of field values.
+func (e CLAUnsignedError) Is(target error) bool {
+	_, ok := target.(CLAUnsignedError)
+	return ok
+}
+
+// InfoKV returns parseable key-value pairs for the ABCI Info field.
+func (e CLAUnsignedError) InfoKV() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "cla.realm=%s\n", e.RealmPath)
+	if e.Hash != "" {
+		fmt.Fprintf(&b, "cla.hash=%s\n", e.Hash)
+	}
+	if e.URL != "" {
+		fmt.Fprintf(&b, "cla.url=%s\n", e.URL)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 func ErrTypeCheck(err error) error {

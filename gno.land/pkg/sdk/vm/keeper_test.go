@@ -1578,7 +1578,12 @@ func Hello(cur realm) string { return "hello" }`},
 	userMsg2 := NewMsgAddPackage(user, userPkgPath2, userFiles2)
 	err = env.vmk.AddPackage(ctx, userMsg2)
 	require.Error(t, err, "should block deployment when user hasn't signed CLA")
-	assert.True(t, errors.Is(err, UnauthorizedUserError{}), "error should be UnauthorizedUserError, got: %v", err)
+	assert.True(t, errors.Is(err, CLAUnsignedError{}), "error should be CLAUnsignedError, got: %v", err)
+	var claErr CLAUnsignedError
+	require.True(t, errors.As(err, &claErr), "error should unwrap to CLAUnsignedError")
+	assert.Equal(t, "gno.land/r/sys/cla", claErr.RealmPath)
+	assert.Equal(t, "testhash123", claErr.Hash)
+	assert.Contains(t, claErr.Error(), "has not signed the required CLA")
 
 	// Test 3: User signs CLA - can deploy
 	signMsg := NewMsgCall(user, nil, claPkgPath, "Sign", []string{"testhash123"})

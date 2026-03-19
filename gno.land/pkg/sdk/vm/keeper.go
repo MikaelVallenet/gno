@@ -494,12 +494,73 @@ func (vm *VMKeeper) checkCLASignature(ctx sdk.Context, creator crypto.Address) e
 	}
 
 	if !result {
-		return ErrUnauthorizedUser(
-			fmt.Sprintf("address %s has not signed the required CLA",
-				creator.String()))
+		return vm.buildCLAError(ctx, creator, sysCLAPkg)
 	}
 
 	return nil
+}
+
+// buildCLAError constructs a CLAUnsignedError with CLA realm metadata.
+// It reads the realm's state for the required hash and CLA URL using
+// the current transaction store. If reads fail (e.g. old realm without
+// those vars), the fields are left empty.
+func (vm *VMKeeper) buildCLAError(ctx sdk.Context, creator crypto.Address, sysCLAPkg string) error {
+	claErr := CLAUnsignedError{
+		Address:   creator.String(),
+		RealmPath: sysCLAPkg,
+	}
+
+	// Read CLA realm state from the current transaction store.
+	// We evaluate expressions in the package context to access
+	// unexported variables directly.
+	claErr.Hash = vm.evalRealmString(ctx, sysCLAPkg, "requiredHash")
+	claErr.URL = vm.evalRealmString(ctx, sysCLAPkg, "claURL")
+
+	return errors.Wrap(claErr, claErr.Error())
+}
+
+// evalRealmString evaluates a simple expression in the context of a realm
+// and returns the result as a string. Uses the current transaction store.
+// Returns an empty string on any failure.
+func (vm *VMKeeper) evalRealmString(ctx sdk.Context, pkgPath, expr string) (result string) {
+	gnostore := vm.getGnoTransactionStore(ctx)
+	pv := gnostore.GetPackage(pkgPath, false)
+	if pv == nil {
+		return ""
+	}
+
+	chainDomain := vm.getChainDomainParam(ctx)
+	msgCtx := stdlibs.ExecContext{
+		ChainID:     ctx.ChainID(),
+		ChainDomain: chainDomain,
+		Height:      ctx.BlockHeight(),
+		Timestamp:   ctx.BlockTime().Unix(),
+		EventLogger: ctx.EventLogger(),
+	}
+	m := gno.NewMachineWithOptions(gno.MachineOptions{
+		PkgPath:  pkgPath,
+		Output:   vm.Output,
+		Store:    gnostore,
+		Context:  msgCtx,
+		Alloc:    gnostore.GetAllocator(),
+		GasMeter: ctx.GasMeter(),
+	})
+	defer m.Release()
+	defer func() {
+		if r := recover(); r != nil {
+			result = ""
+		}
+	}()
+
+	xx, err := m.ParseExpr(expr)
+	if err != nil {
+		return ""
+	}
+	rtvs := m.Eval(xx)
+	if len(rtvs) != 1 || rtvs[0].T.Kind() != gno.StringKind {
+		return ""
+	}
+	return rtvs[0].GetString()
 }
 
 // AddPackage adds a package with given fileset.

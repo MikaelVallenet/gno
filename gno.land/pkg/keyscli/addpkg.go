@@ -143,6 +143,11 @@ func execMakeAddPkg(cfg *MakeAddPkgCfg, args []string, io commands.IO) error {
 		cfg.RootCfg.RootCfg.OnTxSuccess = func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit) {
 			PrintTxInfo(tx, res, io)
 		}
+		cfg.RootCfg.RootCfg.OnTxError = func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit) {
+			if hint := formatCLAHint(res.DeliverTx.Info, cfg.RootCfg.ChainID, nameOrBech32); hint != "" {
+				io.Println(hint)
+			}
+		}
 		err := client.ExecSignAndBroadcast(cfg.RootCfg, args, tx, io)
 		if err != nil {
 			return err
