@@ -12,15 +12,12 @@ const (
 	sysCLARealmDefault = "gno.land/r/sys/cla"
 )
 
-// isCLAError returns true if the error indicates a CLA signing failure.
-// Uses verbose formatting because tm2 error wrapping puts the CLA message
-// in msg traces, not in Error().
+// isCLAError checks the verbose error output for a CLA signing failure.
 func isCLAError(err error) bool {
 	return strings.Contains(fmt.Sprintf("%#v", err), claErrorSubstring)
 }
 
-// queryCLARealmPath queries the chain for the CLA realm package path.
-// Returns the default path on any failure.
+// queryCLARealmPath returns the CLA realm path from chain params, or the default on failure.
 func queryCLARealmPath(remote string) string {
 	cfg := &client.QueryCfg{
 		RootCfg: &client.BaseCfg{BaseOptions: client.BaseOptions{Remote: remote}},
@@ -37,17 +34,14 @@ func queryCLARealmPath(remote string) string {
 	return path
 }
 
-// queryCLAInfo queries the CLA realm for the required hash and URL.
-// Returns empty strings on any failure.
+// queryCLAInfo returns the required hash and URL from the CLA realm.
 func queryCLAInfo(remote, claRealmPath string) (hash, url string) {
 	hash = queryEvalString(remote, claRealmPath, "requiredHash")
 	url = queryEvalString(remote, claRealmPath, "claURL")
 	return
 }
 
-// queryEvalString evaluates a simple expression via vm/qeval and extracts
-// a string result. The response format is "(value string)".
-// Returns empty string on any failure.
+// queryEvalString evaluates an expression via vm/qeval and extracts the string result.
 func queryEvalString(remote, pkgPath, expr string) string {
 	cfg := &client.QueryCfg{
 		RootCfg: &client.BaseCfg{BaseOptions: client.BaseOptions{Remote: remote}},
@@ -61,8 +55,7 @@ func queryEvalString(remote, pkgPath, expr string) string {
 	return parseQEvalString(string(res.Response.Data))
 }
 
-// parseQEvalString extracts the string value from a vm/qeval response.
-// The format is '("value" string)' where value is quoted.
+// parseQEvalString extracts the string value from a '("value" string)' qeval response.
 func parseQEvalString(data string) string {
 	const suffix = " string)"
 	if !strings.HasSuffix(data, suffix) {
@@ -81,8 +74,7 @@ func parseQEvalString(data string) string {
 	return inner
 }
 
-// formatCLAHelper builds a user-friendly CLA signing hint.
-// Returns an empty string if hash is empty.
+// formatCLAHelper builds a user-friendly CLA signing hint, or "" if hash is empty.
 func formatCLAHelper(hash, url, claRealmPath, chainID, nameOrBech32 string) string {
 	if hash == "" {
 		return ""
