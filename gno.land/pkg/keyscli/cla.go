@@ -75,7 +75,7 @@ func parseQEvalString(data string) string {
 }
 
 // formatCLAHelper builds a user-friendly CLA signing hint, or "" if hash is empty.
-func formatCLAHelper(hash, url, claRealmPath, chainID, nameOrBech32 string) string {
+func formatCLAHelper(hash, url, claRealmPath, chainID, remote, nameOrBech32 string) string {
 	if hash == "" {
 		return ""
 	}
@@ -91,6 +91,9 @@ func formatCLAHelper(hash, url, claRealmPath, chainID, nameOrBech32 string) stri
 	fmt.Fprintf(&b, "\nTo sign the CLA, run:\n\n")
 	fmt.Fprintf(&b, "  gnokey maketx call -pkgpath %s -func Sign -args %s", claRealmPath, hash)
 	fmt.Fprintf(&b, " -gas-fee 100000ugnot -gas-wanted 2000000 -broadcast")
+	if remote != "" {
+		fmt.Fprintf(&b, " -remote %s", remote)
+	}
 	if chainID != "" {
 		fmt.Fprintf(&b, " -chainid %s", chainID)
 	}

@@ -149,7 +149,7 @@ func execMakeAddPkg(cfg *MakeAddPkgCfg, args []string, io commands.IO) error {
 				remote := cfg.RootCfg.RootCfg.Remote
 				claRealm := queryCLARealmPath(remote)
 				hash, claURL := queryCLAInfo(remote, claRealm)
-				if hint := formatCLAHelper(hash, claURL, claRealm, cfg.RootCfg.ChainID, nameOrBech32); hint != "" {
+				if hint := formatCLAHelper(hash, claURL, claRealm, cfg.RootCfg.ChainID, remote, nameOrBech32); hint != "" {
 					io.Println(hint)
 				}
 			}
