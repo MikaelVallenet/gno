@@ -663,6 +663,18 @@ func (sw *MultiplexSwitch) runAcceptLoop(ctx context.Context) {
 			continue
 		}
 
+		// Reject duplicate peer IDs
+		if sw.peers.Has(p.ID()) {
+			sw.Logger.Info(
+				"Ignoring inbound connection: already connected",
+				"address", p.SocketAddr(),
+				"id", p.ID(),
+			)
+
+			sw.transport.Remove(p)
+			continue
+		}
+
 		// There are open peer slots, add peers
 		if err := sw.addPeer(p); err != nil {
 			sw.transport.Remove(p)

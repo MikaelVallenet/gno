@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gnolang/gno/tm2/pkg/p2p/mock"
+	"github.com/gnolang/gno/tm2/pkg/p2p/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,6 +61,145 @@ func TestSet_Remove(t *testing.T) {
 		// Make sure the peer is present
 		assert.False(t, s.Has(peer.ID()))
 	}
+}
+
+func TestSet_Add_DuplicateInbound(t *testing.T) {
+	t.Parallel()
+
+	var (
+		key = types.GenerateNodeKey()
+		s   = newSet()
+	)
+
+	peer := &mock.Peer{
+		IDFn: func() types.ID {
+			return key.ID()
+		},
+		IsOutboundFn: func() bool {
+			return false
+		},
+	}
+
+	// Add the same inbound peer twice
+	s.Add(peer)
+	s.Add(peer)
+
+	// Counter should reflect 1 peer, not 2
+	assert.EqualValues(t, 1, s.NumInbound())
+	assert.EqualValues(t, 0, s.NumOutbound())
+	assert.Len(t, s.List(), 1)
+}
+
+func TestSet_Add_DuplicateOutbound(t *testing.T) {
+	t.Parallel()
+
+	var (
+		key = types.GenerateNodeKey()
+		s   = newSet()
+	)
+
+	peer := &mock.Peer{
+		IDFn: func() types.ID {
+			return key.ID()
+		},
+		IsOutboundFn: func() bool {
+			return true
+		},
+	}
+
+	// Add the same outbound peer twice
+	s.Add(peer)
+	s.Add(peer)
+
+	// Counter should reflect 1 peer, not 2
+	assert.EqualValues(t, 0, s.NumInbound())
+	assert.EqualValues(t, 1, s.NumOutbound())
+	assert.Len(t, s.List(), 1)
+}
+
+func TestSet_Add_DirectionChange(t *testing.T) {
+	t.Parallel()
+
+	var (
+		key = types.GenerateNodeKey()
+		s   = newSet()
+	)
+
+	inboundPeer := &mock.Peer{
+		IDFn: func() types.ID {
+			return key.ID()
+		},
+		IsOutboundFn: func() bool {
+			return false
+		},
+	}
+
+	outboundPeer := &mock.Peer{
+		IDFn: func() types.ID {
+			return key.ID()
+		},
+		IsOutboundFn: func() bool {
+			return true
+		},
+	}
+
+	// Add as inbound first
+	s.Add(inboundPeer)
+	assert.EqualValues(t, 1, s.NumInbound())
+	assert.EqualValues(t, 0, s.NumOutbound())
+
+	// Replace with outbound (same peer ID)
+	s.Add(outboundPeer)
+	assert.EqualValues(t, 0, s.NumInbound())
+	assert.EqualValues(t, 1, s.NumOutbound())
+	assert.Len(t, s.List(), 1)
+}
+
+func TestSet_Remove_NonExistent(t *testing.T) {
+	t.Parallel()
+
+	s := newSet()
+
+	// Removing a non-existent peer should return false
+	assert.False(t, s.Remove("nonexistent"))
+
+	// Counters should remain at zero
+	assert.EqualValues(t, 0, s.NumInbound())
+	assert.EqualValues(t, 0, s.NumOutbound())
+}
+
+func TestSet_Add_Remove_DuplicateCycle(t *testing.T) {
+	t.Parallel()
+
+	var (
+		key = types.GenerateNodeKey()
+		s   = newSet()
+	)
+
+	peer := &mock.Peer{
+		IDFn: func() types.ID {
+			return key.ID()
+		},
+		IsOutboundFn: func() bool {
+			return false
+		},
+	}
+
+	// Add the same peer 10 times (simulates the reported attack)
+	for range 10 {
+		s.Add(peer)
+	}
+
+	// Should only count as 1 peer
+	assert.EqualValues(t, 1, s.NumInbound())
+	assert.EqualValues(t, 0, s.NumOutbound())
+	assert.Len(t, s.List(), 1)
+
+	// Single remove should clean up completely
+	assert.True(t, s.Remove(peer.ID()))
+	assert.EqualValues(t, 0, s.NumInbound())
+	assert.EqualValues(t, 0, s.NumOutbound())
+	assert.Len(t, s.List(), 0)
 }
 
 func TestSet_Get(t *testing.T) {

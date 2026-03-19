@@ -23,10 +23,26 @@ func newSet() *set {
 	}
 }
 
-// Add adds the peer to the set
+// Add adds the peer to the set.
+// If a peer with the same ID already exists, the reference is updated
+// and counters are adjusted if the direction changed
 func (s *set) Add(peer PeerConn) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
+
+	if existing, exists := s.peers[peer.ID()]; exists {
+		if existing.IsOutbound() && !peer.IsOutbound() {
+			s.outbound -= 1
+			s.inbound += 1
+		} else if !existing.IsOutbound() && peer.IsOutbound() {
+			s.inbound -= 1
+			s.outbound += 1
+		}
+
+		s.peers[peer.ID()] = peer
+
+		return
+	}
 
 	s.peers[peer.ID()] = peer
 
