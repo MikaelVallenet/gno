@@ -144,7 +144,7 @@ func execMakeAddPkg(cfg *MakeAddPkgCfg, args []string, io commands.IO) error {
 			PrintTxInfo(tx, res, io)
 		}
 		cfg.RootCfg.RootCfg.OnTxError = func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit) {
-			if claHelper := formatCLAHelper(res.DeliverTx.Info, cfg.RootCfg.ChainID, nameOrBech32); claHelper != "" {
+			if claHelper := formatCLAHelper(res.DeliverTx.Info, cfg.RootCfg.ChainID, cfg.RootCfg.RootCfg.Remote, nameOrBech32); claHelper != "" {
 				io.Println(claHelper)
 			}
 		}

@@ -21,9 +21,9 @@ func TestParseCLAInfo_Empty(t *testing.T) {
 	assert.Empty(t, result)
 }
 
-func TestFormatCLAHint(t *testing.T) {
+func TestFormatCLAHelper(t *testing.T) {
 	info := "cla.realm=gno.land/r/sys/cla\ncla.hash=abc123hash\ncla.url=https://example.com/cla\nvm.version=0.1"
-	hint := formatCLAHelper(info, "testchain", "g1abc")
+	hint := formatCLAHelper(info, "testchain", "localhost:26657", "g1abc")
 
 	assert.Contains(t, hint, "CLA document: https://example.com/cla")
 	assert.Contains(t, hint, "To sign the CLA, run:")
@@ -31,25 +31,26 @@ func TestFormatCLAHint(t *testing.T) {
 	assert.Contains(t, hint, "-func Sign")
 	assert.Contains(t, hint, "-args abc123hash")
 	assert.Contains(t, hint, "-chainid testchain")
+	assert.Contains(t, hint, "-remote localhost:26657")
 	assert.Contains(t, hint, "g1abc")
 }
 
-func TestFormatCLAHint_NoCLAData(t *testing.T) {
-	hint := formatCLAHelper("vm.version=0.1", "testchain", "g1abc")
+func TestFormatCLAHelper_NoCLAData(t *testing.T) {
+	hint := formatCLAHelper("vm.version=0.1", "testchain", "localhost:26657", "g1abc")
 	assert.Empty(t, hint)
 }
 
-func TestFormatCLAHint_NoURL(t *testing.T) {
+func TestFormatCLAHelper_NoURL(t *testing.T) {
 	info := "cla.realm=gno.land/r/sys/cla\ncla.hash=abc123hash\nvm.version=0.1"
-	hint := formatCLAHelper(info, "testchain", "g1abc")
+	hint := formatCLAHelper(info, "testchain", "localhost:26657", "g1abc")
 
 	assert.NotContains(t, hint, "CLA document:")
 	assert.Contains(t, hint, "To sign the CLA, run:")
 	assert.Contains(t, hint, "-args abc123hash")
 }
 
-func TestFormatCLAHint_NoHash(t *testing.T) {
+func TestFormatCLAHelper_NoHash(t *testing.T) {
 	info := "cla.realm=gno.land/r/sys/cla\ncla.url=https://example.com/cla\nvm.version=0.1"
-	hint := formatCLAHelper(info, "testchain", "g1abc")
+	hint := formatCLAHelper(info, "testchain", "localhost:26657", "g1abc")
 	assert.Empty(t, hint) // Can't sign without a hash
 }

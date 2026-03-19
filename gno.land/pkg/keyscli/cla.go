@@ -25,7 +25,7 @@ func parseCLAInfo(info string) map[string]string {
 
 // formatCLAHelper builds a user-friendly CLA signing hint from ABCI Info metadata.
 // Returns an empty string if the Info doesn't contain CLA data.
-func formatCLAHelper(info, chainID, nameOrBech32 string) string {
+func formatCLAHelper(info, chainID, remote, nameOrBech32 string) string {
 	claInfo := parseCLAInfo(info)
 	realm, ok := claInfo["realm"]
 	if !ok {
@@ -49,6 +49,9 @@ func formatCLAHelper(info, chainID, nameOrBech32 string) string {
 	fmt.Fprintf(&b, " -gas-fee 100000ugnot -gas-wanted 2000000 -broadcast")
 	if chainID != "" {
 		fmt.Fprintf(&b, " -chainid %s", chainID)
+	}
+	if remote != "" {
+		fmt.Fprintf(&b, " -remote %s", remote)
 	}
 	fmt.Fprintf(&b, " %s\n", nameOrBech32)
 	return b.String()
