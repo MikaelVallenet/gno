@@ -15,7 +15,7 @@ type BaseOptions struct {
 	// print info in the result. If OnTxSuccess is nil, print basic info.
 	OnTxSuccess func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit)
 	// OnTxError is called when the transaction tx fails during delivery.
-	// It can be used to provide context-specific hints (e.g. CLA signing instructions).
+	// It can be used to provide context-specific hints to the user.
 	OnTxError func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit)
 }
 

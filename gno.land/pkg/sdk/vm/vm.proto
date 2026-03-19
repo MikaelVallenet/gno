@@ -52,6 +52,13 @@ message TypeCheckError {
 message UnauthorizedUserError {
 }
 
+message CLAUnsignedError {
+	string address = 1;
+	string realm_path = 2;
+	string hash = 3;
+	string url = 4;
+}
+
 message InvalidPackageError {
 }
 
