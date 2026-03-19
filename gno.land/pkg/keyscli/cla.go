@@ -2,6 +2,7 @@ package keyscli
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gnolang/gno/tm2/pkg/crypto/keys/client"
@@ -12,9 +13,9 @@ const (
 	sysCLARealmDefault = "gno.land/r/sys/cla"
 )
 
-// isCLAError checks the verbose error output for a CLA signing failure.
+// isCLAError checks whether the error indicates a CLA signing failure.
 func isCLAError(err error) bool {
-	return strings.Contains(fmt.Sprintf("%#v", err), claErrorSubstring)
+	return err != nil && strings.Contains(fmt.Sprintf("%#v", err), claErrorSubstring)
 }
 
 // queryCLARealmPath returns the CLA realm path from chain params, or the default on failure.
@@ -67,9 +68,9 @@ func parseQEvalString(data string) string {
 		return ""
 	}
 	inner = inner[1:]
-	// Strip surrounding quotes if present
-	if len(inner) >= 2 && inner[0] == '"' && inner[len(inner)-1] == '"' {
-		inner = inner[1 : len(inner)-1]
+	// Unquote if the value is Go-quoted.
+	if unquoted, err := strconv.Unquote(inner); err == nil {
+		return unquoted
 	}
 	return inner
 }
