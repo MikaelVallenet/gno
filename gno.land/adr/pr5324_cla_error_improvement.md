@@ -34,8 +34,10 @@ the key mechanism: no exported getter functions are needed on the CLA realm.
 `queryEvalInternal` uses a throwaway store, which is fine since the CLA
 hash is always set by a prior committed govDAO proposal.
 
-The error only carries CLA realm state — things the client cannot know.
-Address, chain ID, and chain domain are client-side context and are excluded.
+The `InfoKV()` output only carries CLA realm state — things the client
+cannot know. Address, chain ID, and chain domain are client-side context
+and are excluded from Info. (`Address` is kept in the struct for the
+human-readable `Error()` message but not serialized into Info.)
 
 Values in `InfoKV()` are sanitized (newlines stripped) to prevent injection
 of arbitrary key-value pairs into the Info field.
@@ -64,16 +66,15 @@ lets the gno.land `addpkg` command hook into broadcast failures. When the
 Info field contains `cla.*` keys, gnokey formats a helpful message:
 
 ```
-A Contributor License Agreement (CLA) must be signed before deploying
-packages. It grants the necessary rights for your code to be used on-chain.
+A Contributor License Agreement (CLA) must be signed before deploying packages.
+It grants the necessary rights for your code to be used on-chain.
 The CLA document is defined through a GovDAO governance proposal.
 
 CLA document: https://github.com/gnolang/gno/blob/master/CLA.md
 
 To sign the CLA, run:
 
-  gnokey maketx call -pkgpath gno.land/r/sys/cla -func Sign -args abc123hash
-  -gas-fee 100000ugnot -gas-wanted 2000000 -broadcast -chainid dev mikae
+  gnokey maketx call -pkgpath gno.land/r/sys/cla -func Sign -args abc123hash -gas-fee 100000ugnot -gas-wanted 2000000 -broadcast -chainid dev mykey
 ```
 
 The command uses realm path and hash from the Info field, and address,

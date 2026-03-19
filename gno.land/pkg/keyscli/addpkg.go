@@ -144,8 +144,8 @@ func execMakeAddPkg(cfg *MakeAddPkgCfg, args []string, io commands.IO) error {
 			PrintTxInfo(tx, res, io)
 		}
 		cfg.RootCfg.RootCfg.OnTxError = func(tx std.Tx, res *ctypes.ResultBroadcastTxCommit) {
-			if hint := formatCLAHint(res.DeliverTx.Info, cfg.RootCfg.ChainID, nameOrBech32); hint != "" {
-				io.Println(hint)
+			if claHelper := formatCLAHelper(res.DeliverTx.Info, cfg.RootCfg.ChainID, nameOrBech32); claHelper != "" {
+				io.Println(claHelper)
 			}
 		}
 		err := client.ExecSignAndBroadcast(cfg.RootCfg, args, tx, io)
