@@ -81,6 +81,8 @@ func newProposalStatus(allowedToVote []string) *proposalStatus {
 	}
 }
 
+// totalPower computes the total voting power dynamically from current members
+// rather than using a snapshot. See https://github.com/gnolang/gno/pull/5271#discussion_r2952523023
 func (ps *proposalStatus) totalPower() float64 {
 	members := getMembers(cross)
 	var tp float64
