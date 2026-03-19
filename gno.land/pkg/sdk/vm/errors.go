@@ -73,9 +73,8 @@ func ErrInvalidPackage(msg string) error {
 	return errors.Wrap(InvalidPackageError{}, msg)
 }
 
-// CLAUnsignedError is returned when a user tries to deploy a package without
-// signing the required CLA. It carries CLA realm state so clients can build
-// actionable hints (e.g. a gnokey command to sign).
+// CLAUnsignedError indicates a missing CLA signature. It carries realm
+// state (hash, URL) so clients can build actionable signing hints.
 type CLAUnsignedError struct {
 	abciError
 	Address   string `json:"address"`    // bech32 address of the deployer
@@ -96,15 +95,22 @@ func (e CLAUnsignedError) Is(target error) bool {
 
 // InfoKV returns parseable key-value pairs for the ABCI Info field.
 func (e CLAUnsignedError) InfoKV() string {
+	sanitize := func(s string) string {
+		return strings.ReplaceAll(strings.ReplaceAll(s, "\n", ""), "\r", "")
+	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "cla.realm=%s\n", e.RealmPath)
+	fmt.Fprintf(&b, "cla.realm=%s\n", sanitize(e.RealmPath))
 	if e.Hash != "" {
-		fmt.Fprintf(&b, "cla.hash=%s\n", e.Hash)
+		fmt.Fprintf(&b, "cla.hash=%s\n", sanitize(e.Hash))
 	}
 	if e.URL != "" {
-		fmt.Fprintf(&b, "cla.url=%s\n", e.URL)
+		fmt.Fprintf(&b, "cla.url=%s\n", sanitize(e.URL))
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+func ErrCLAUnsigned(claErr CLAUnsignedError) error {
+	return errors.Wrap(claErr, claErr.Error())
 }
 
 func ErrTypeCheck(err error) error {

@@ -27,14 +27,18 @@ The keeper already detects CLA failures. Instead of returning a generic
 read from the CLA realm: `RealmPath`, `Hash`, `URL`.
 
 To read the realm's unexported variables (`requiredHash`, `claURL`), we
-introduced `evalRealmString` — a small helper that evaluates an expression
-in the realm's package context using the current transaction store. This
-avoids adding exported getter functions to the CLA realm and avoids using
-`queryEvalInternal` which creates a throwaway store that wouldn't see
-uncommitted state.
+use the existing `queryEvalInternal` infrastructure. It sets `PkgPath` to
+the CLA realm's package path on the GnoVM machine, which allows evaluating
+identifiers in the realm's scope — including unexported variables. This is
+the key mechanism: no exported getter functions are needed on the CLA realm.
+`queryEvalInternal` uses a throwaway store, which is fine since the CLA
+hash is always set by a prior committed govDAO proposal.
 
 The error only carries CLA realm state — things the client cannot know.
 Address, chain ID, and chain domain are client-side context and are excluded.
+
+Values in `InfoKV()` are sanitized (newlines stripped) to prevent injection
+of arbitrary key-value pairs into the Info field.
 
 ### 2. Handler: populate ABCI Info field
 
@@ -94,12 +98,15 @@ them via `callRealmString`. Rejected because:
   package context — no new public API needed.
 - Fewer changes to the CLA realm.
 
-### Use `queryEvalInternal` to read realm state
+### Custom `evalRealmString` helper with live transaction store
 
-`queryEvalInternal` creates a throwaway transaction store for read-only ABCI
-queries. Rejected because it wouldn't see state changes from the current
-uncommitted transaction (e.g. in tests or same-block operations). We use
-`evalRealmString` which operates on the live transaction store instead.
+We initially introduced a custom `evalRealmString` that uses the live
+transaction store instead of `queryEvalInternal`. Rejected because:
+- `queryEvalInternal` already exists and does the same thing.
+- The CLA hash is always set by a prior committed govDAO proposal, so the
+  throwaway store sees it fine.
+- The custom helper introduced a new code path that could evaluate
+  arbitrary expressions if misused.
 
 ### Generic `infoProvider` interface in the handler
 
@@ -117,6 +124,5 @@ to `res.Info`, and YAGNI applies.
   hints in the future.
 - The `CLAUnsignedError` type is registered with Amino, adding a new
   concrete type to the serialization registry.
-- `evalRealmString` uses the live transaction store and the realm's gas
-  meter; since it only runs on the error path (tx already failing), the
-  gas impact is negligible.
+- `queryEvalInternal` is called on the error path (tx already failing)
+  with its own gas meter, so there is no impact on transaction gas.

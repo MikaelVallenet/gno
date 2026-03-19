@@ -1569,6 +1569,9 @@ func Hello(cur realm) string { return "hello" }`},
 	_, err = env.vmk.Call(ctx, setHashMsg)
 	require.NoError(t, err)
 
+	// Commit so queryEvalInternal (which uses a throwaway store) can see the new hash.
+	env.vmk.CommitGnoTransactionStore(ctx)
+
 	const userPkgPath2 = "gno.land/r/user/pkg2"
 	userFiles2 := []*std.MemFile{
 		{Name: "gnomod.toml", Body: gnolang.GenGnoModLatest(userPkgPath2)},
@@ -1604,6 +1607,7 @@ func Hello(cur realm) string { return "hello" }`},
 	setHashMsg2 := NewMsgCall(admin, nil, claPkgPath, "SetRequiredHash", []string{"newhash456"})
 	_, err = env.vmk.Call(ctx, setHashMsg2)
 	require.NoError(t, err)
+	env.vmk.CommitGnoTransactionStore(ctx)
 
 	const userPkgPath4 = "gno.land/r/user/pkg4"
 	userFiles4 := []*std.MemFile{
@@ -1619,6 +1623,7 @@ func Hello(cur realm) string { return "hello" }`},
 	setHashMsg3 := NewMsgCall(admin, nil, claPkgPath, "SetRequiredHash", []string{""})
 	_, err = env.vmk.Call(ctx, setHashMsg3)
 	require.NoError(t, err)
+	env.vmk.CommitGnoTransactionStore(ctx)
 
 	const userPkgPath5 = "gno.land/r/user/pkg5"
 	userFiles5 := []*std.MemFile{
