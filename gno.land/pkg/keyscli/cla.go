@@ -84,7 +84,7 @@ func formatCLAHelper(hash, url, claRealmPath, chainID, remote, nameOrBech32 stri
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString("A Contributor License Agreement (CLA) must be signed before deploying packages.\n")
-	b.WriteString("It grants the necessary rights for your code to be used on-chain.\n")
+	b.WriteString("It clarifies the terms under which your contributions are licensed to the project.\n")
 	b.WriteString("The CLA document is defined through a GovDAO governance proposal.\n")
 	if url != "" {
 		fmt.Fprintf(&b, "\nCLA document: %s\n", url)
