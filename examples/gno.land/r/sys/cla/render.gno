@@ -11,7 +11,7 @@ func Render(path string) string {
 	out := md.H1("Contributor License Agreement (CLA)")
 
 	out += md.Paragraph("A Contributor License Agreement (CLA) must be signed before deploying packages.")
-	out += md.Paragraph("It grants the necessary rights for your code to be used on-chain.")
+	out += md.Paragraph("It clarifies the terms under which your contributions are licensed to the project.")
 	out += md.Paragraph("The CLA document is defined through a " + md.Link("GovDAO", "/r/gov/dao") + " governance proposal.")
 
 	if requiredHash == "" {
@@ -38,7 +38,7 @@ func Render(path string) string {
 	out += md.HorizontalRule()
 	out += md.H2("How to Sign")
 	out += md.Paragraph(md.Bold("From gnoweb:") + " Click the \"Sign CLA\" action link below.")
-	out += md.Paragraph(md.Bold("From gnokey:") + " Visit the " + md.Link("helper page", "$help") + " to get the exact command to sign.")
+	out += md.Paragraph(md.Bold("From gnokey:") + " Visit the " + md.Link("helper page", helplink.Realm("gno.land/r/sys/cla").Home()) + " to get the exact command to sign.")
 
 	out += md.H3("Actions")
 	out += helplink.Func("Sign CLA", "Sign", "hash", requiredHash) + "\n"
