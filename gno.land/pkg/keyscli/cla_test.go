@@ -30,15 +30,15 @@ func TestParseQEvalString(t *testing.T) {
 }
 
 func TestFormatCLAHelper(t *testing.T) {
-	hint := formatCLAHelper("abc123hash", "https://example.com/cla", "gno.land/r/sys/cla", "testchain", "localhost:26657", "g1abc")
+	helper := formatCLAHelper("abc123hash", "https://example.com/cla", "gno.land/r/sys/cla", "testchain", "localhost:26657", "g1abc")
 
-	assert.Contains(t, hint, "CLA document: https://example.com/cla")
-	assert.Contains(t, hint, "To sign the CLA, run:")
-	assert.Contains(t, hint, "-pkgpath gno.land/r/sys/cla")
-	assert.Contains(t, hint, "-func Sign")
-	assert.Contains(t, hint, "-args abc123hash")
-	assert.Contains(t, hint, "-chainid testchain")
-	assert.Contains(t, hint, "g1abc")
+	assert.Contains(t, helper, "CLA document: https://example.com/cla")
+	assert.Contains(t, helper, "To sign the CLA, run:")
+	assert.Contains(t, helper, "-pkgpath gno.land/r/sys/cla")
+	assert.Contains(t, helper, "-func Sign")
+	assert.Contains(t, helper, "-args abc123hash")
+	assert.Contains(t, helper, "-chainid testchain")
+	assert.Contains(t, helper, "g1abc")
 }
 
 func TestFormatCLAHelper_NoHash(t *testing.T) {
@@ -46,12 +46,12 @@ func TestFormatCLAHelper_NoHash(t *testing.T) {
 }
 
 func TestFormatCLAHelper_NoURL(t *testing.T) {
-	hint := formatCLAHelper("abc123", "", "gno.land/r/sys/cla", "chain", "localhost:26657", "g1abc")
-	assert.NotContains(t, hint, "CLA document:")
-	assert.Contains(t, hint, "To sign the CLA, run:")
+	helper := formatCLAHelper("abc123", "", "gno.land/r/sys/cla", "chain", "localhost:26657", "g1abc")
+	assert.NotContains(t, helper, "CLA document:")
+	assert.Contains(t, helper, "To sign the CLA, run:")
 }
 
 func TestFormatCLAHelper_NoChainID(t *testing.T) {
-	hint := formatCLAHelper("abc123", "", "gno.land/r/sys/cla", "", "", "g1abc")
-	assert.NotContains(t, hint, "-chainid")
+	helper := formatCLAHelper("abc123", "", "gno.land/r/sys/cla", "", "", "g1abc")
+	assert.NotContains(t, helper, "-chainid")
 }

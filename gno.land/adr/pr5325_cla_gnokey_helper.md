@@ -1,4 +1,4 @@
-# ADR: Client-Only CLA Signing Hint in gnokey
+# ADR: Client-Only CLA Signing Helper in gnokey
 
 ## Context
 
@@ -14,7 +14,7 @@ The goal is to provide actionable feedback with a copy-pasteable signing command
 
 ## Decision
 
-All CLA hint logic lives in the gnokey client (`gno.land/pkg/keyscli`).
+All CLA helper logic lives in the gnokey client (`gno.land/pkg/keyscli`).
 The keeper and VM handler remain unchanged.
 
 ### How it works
@@ -28,7 +28,7 @@ The keeper and VM handler remain unchanged.
 4. If the queries succeed, gnokey formats a helpful message with the signing
    command and prints it before returning the error.
 
-The hint includes:
+The helper includes:
 - An explanation of what the CLA is
 - A link to the CLA document (if available)
 - A ready-to-use `gnokey maketx call` command with the correct hash
@@ -36,7 +36,7 @@ The hint includes:
 ### Graceful degradation
 
 If any query fails (realm not deployed, network issue, variable renamed),
-no hint is printed. The original error is always returned regardless.
+no helper is printed. The original error is always returned regardless.
 
 ## Alternatives Considered
 
@@ -50,7 +50,7 @@ parse. This was rejected because:
 - It required changes across four layers: keeper, handler, tm2, and gnokey.
 - It introduced a new error type, proto definition, and amino registration.
 - It required an `OnTxError` callback in tm2's `BaseOptions` — a new concept
-  in the broadcast layer just for CLA hints.
+  in the broadcast layer just for CLA helpers.
 - The ABCI `Info` field needed a custom key-value format with newline
   sanitization to prevent injection.
 - The keeper already knows the CLA result (pass/fail) but had to spin up
@@ -71,7 +71,7 @@ any client call them. Rejected because:
 
 - Users get clear, actionable feedback when CLA signing is required.
 - Zero changes to the keeper, handler, tm2, or proto definitions.
-- The hint depends on string-matching the error message
+- The helper depends on string-matching the error message
   `"has not signed the required CLA"`, which is fragile if the message
   changes. This is acceptable because the integration test already
   depends on the same string.

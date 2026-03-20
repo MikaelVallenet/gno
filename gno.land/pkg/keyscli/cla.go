@@ -75,7 +75,7 @@ func parseQEvalString(data string) string {
 	return inner
 }
 
-// formatCLAHelper builds a user-friendly CLA signing hint, or "" if hash is empty.
+// formatCLAHelper builds a user-friendly CLA signing helper, or "" if hash is empty.
 func formatCLAHelper(hash, url, claRealmPath, chainID, remote, nameOrBech32 string) string {
 	if hash == "" {
 		return ""
