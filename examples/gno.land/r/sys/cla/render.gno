@@ -23,7 +23,7 @@ func Render(path string) string {
 	}
 
 	if claURL != "" {
-		out += md.Paragraph("You can read the full agreement here: " + claURL)
+		out += md.Paragraph("You can read the full agreement here: " + md.Link(claURL, claURL))
 	}
 
 	out += md.HorizontalRule()
@@ -38,7 +38,7 @@ func Render(path string) string {
 	out += md.HorizontalRule()
 	out += md.H2("How to Sign")
 	out += md.Paragraph(md.Bold("From gnoweb:") + " Click the \"Sign CLA\" action link below.")
-	out += md.Paragraph(md.Bold("From gnokey:") + " Visit the " + md.Link("helper page", helplink.Realm("gno.land/r/sys/cla").Home()) + " to get the exact command to sign.")
+	out += md.Paragraph(md.Bold("From gnokey:") + " Visit the " + md.Link("helper page", helplink.Home()) + " to get the exact command to sign.")
 
 	out += md.H3("Actions")
 	out += helplink.Func("Sign CLA", "Sign", "hash", requiredHash) + "\n"

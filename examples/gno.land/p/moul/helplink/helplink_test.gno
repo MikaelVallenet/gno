@@ -90,7 +90,7 @@ func TestHome(t *testing.T) {
 		realm_XXX Realm
 		want      string
 	}{
-		{"", "$help"},
+		{"", "/p/moul/helplink$help"},
 		{Realm(cd + "/r/lorem/ipsum"), "/r/lorem/ipsum$help"},
 		{"gno.world/r/lorem/ipsum", "https://gno.world/r/lorem/ipsum$help"},
 	}
